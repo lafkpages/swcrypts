@@ -8,3 +8,10 @@ await Bun.build({
     ".html": "html",
   },
 });
+
+await Bun.build({
+  entrypoints: ["src/cli/wrapper/sw.ts"],
+  target: "browser",
+  minify: true,
+  outdir: "dist/wrapper",
+});

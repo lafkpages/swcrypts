@@ -7,7 +7,9 @@
   "private": true,
   "devDependencies": {
     "@types/bun": "latest",
-    "bunli": "^0.9.1"
+    "@types/mime-types": "^3.0.1",
+    "bunli": "^0.9.1",
+    "mime-types": "^3.0.2"
   },
   "peerDependencies": {
     "typescript": "^6.0.3"

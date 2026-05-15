@@ -6,6 +6,9 @@ import { description, version } from "../../package.json";
 import _wrapper from "../../dist/wrapper/index.html";
 const wrapperHtml = _wrapper as unknown as string;
 
+import _sw from "../../dist/wrapper/sw.js" with { type: "text" };
+const sw = _sw as unknown as string;
+
 import { readdir, rm } from "node:fs/promises";
 import { join } from "node:path";
 import { loadConfig } from "./config";
@@ -70,7 +73,16 @@ const buildCommand = defineCommand({
 
     await rm(flags.outdir, { recursive: true, force: true });
 
+    const assets: string[] = [];
+
     for (const relativeFilePath of files) {
+      if (relativeFilePath === "__swcrypts_sw.js") {
+        console.warn(
+          `Skipping ${relativeFilePath} because it is internally reserved`,
+        );
+        continue;
+      }
+
       const filePath = join(flags.indir, relativeFilePath);
       const file = Bun.file(filePath);
       const data = await file.bytes();
@@ -94,10 +106,16 @@ const buildCommand = defineCommand({
           .replace('"{{SALT}}"', JSON.stringify(salt));
       } else {
         dataToWrite = encryptedData;
+        assets.push("/" + relativeFilePath);
       }
 
       await Bun.write(outputFilePath, dataToWrite);
     }
+
+    await Bun.write(
+      join(flags.outdir, "__swcrypts_sw.js"),
+      sw.replace('["{{ASSETS}}"]', JSON.stringify(assets)),
+    );
   },
 });
 
