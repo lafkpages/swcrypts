@@ -12,13 +12,11 @@ if (location.protocol !== "https:" && location.hostname !== "localhost") {
 }
 
 const hashedPasswordKey = "__swcrypts_hashed_password";
-let encryptedPage: Uint8Array<ArrayBuffer>;
+const encryptedPage = Uint8Array.fromBase64("{{ENCRYPTED_PAGE}}");
 
 if (failed) {
   setupUi();
 } else {
-  encryptedPage = Uint8Array.fromBase64("{{ENCRYPTED_PAGE}}");
-
   const storedHashedPassword = localStorage.getItem(hashedPasswordKey);
 
   if (storedHashedPassword) {
@@ -32,7 +30,7 @@ if (failed) {
     }
 
     if (decryptedPage) {
-      openPage(decryptedPage);
+      sendHashedPasswordAndReload(storedHashedPassword);
     } else {
       setupUi();
     }
@@ -108,20 +106,23 @@ function onDocumentLoad() {
       button.disabled = false;
     }
 
-    if (decryptedPage) {
+    if (decryptedPage !== null) {
       localStorage.setItem(hashedPasswordKey, hashedPassword);
-      openPage(decryptedPage);
+      sendHashedPasswordAndReload(hashedPassword);
     }
   });
 }
 
-function openPage(decryptedPage: ArrayBuffer) {
-  const decodedPage = new TextDecoder().decode(decryptedPage);
+async function sendHashedPasswordAndReload(hashedPassword: string) {
+  const registration = await navigator.serviceWorker.ready;
 
-  document.open();
-  document.write(decodedPage);
-  document.write(
-    `<script>navigator.serviceWorker.register("/__swcrypts_sw.js",{scope:"/"});navigator.serviceWorker.ready.then(r=>{r.active.postMessage(localStorage.getItem(${JSON.stringify(hashedPasswordKey)}))})</script>`,
-  );
-  document.close();
+  if (registration.active) {
+    registration.active.postMessage(hashedPassword);
+  } else {
+    console.error(
+      "No active service worker found to send the hashed password to.",
+    );
+  }
+
+  location.reload();
 }

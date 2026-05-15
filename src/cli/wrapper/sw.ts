@@ -30,6 +30,9 @@ self.addEventListener("fetch", (e) => {
     e.respondWith(fetchAsset(e.request));
 
     return;
+  } else if (e.request.mode === "navigate") {
+    e.respondWith(fetchEntryPoint(e.request));
+    return;
   }
 
   e.respondWith(fetch(e.request));
@@ -42,7 +45,9 @@ self.addEventListener("message", (e) => {
 
 async function fetchAsset(request: Request) {
   if (!hashedPassword) {
-    return new Response("Unauthorized SwCrypts", { status: 401 });
+    return new Response("Unauthorized SwCrypts", {
+      status: 401,
+    });
   }
 
   const url = new URL(request.url);
@@ -66,4 +71,40 @@ async function fetchAsset(request: Request) {
         "application/octet-stream",
     },
   });
+}
+
+async function fetchEntryPoint(request: Request) {
+  const resp = await fetch(request);
+
+  if (!hashedPassword) {
+    return resp;
+  }
+
+  if (!resp.ok) {
+    return resp;
+  }
+
+  const wrapperHtml = await resp.text();
+  const encryptedPageMatch = wrapperHtml.match(
+    /=Uint8Array\.fromBase64\(("[\w+/=]+")\);/,
+  )?.[1];
+
+  if (!encryptedPageMatch) {
+    return resp;
+  }
+
+  const encryptedPage = Uint8Array.fromBase64(JSON.parse(encryptedPageMatch));
+  const decryptedPage = await decrypt(encryptedPage, hashedPassword);
+  const decodedPage = new TextDecoder().decode(decryptedPage);
+
+  return new Response(
+    `${decodedPage}<script>navigator.serviceWorker.register("/__swcrypts_sw.js",{scope:"/"});navigator.serviceWorker.ready.then(r=>{r.active.postMessage(localStorage.getItem("__swcrypts_hashed_password"))})</script>`,
+    {
+      ...resp,
+      headers: {
+        ...resp.headers,
+        "Content-Type": "text/html",
+      },
+    },
+  );
 }
