@@ -2,7 +2,9 @@
 /// <reference lib="webworker" />
 
 import { contentType } from "mime-types";
-import { decrypt } from "../..";
+import { decrypt } from "../../..";
+import { patchCspForInlineScript } from "./csp";
+
 declare const self: ServiceWorkerGlobalScope;
 
 const assets = ["{{ASSETS}}"];
@@ -104,8 +106,18 @@ async function fetchEntryPoint(request: Request) {
   const headers = new Headers(resp.headers);
   headers.set("Content-Type", "text/html");
 
+  const upstreamCsp = headers.get("Content-Security-Policy");
+  let nonceAttr = "";
+  if (upstreamCsp) {
+    const patched = patchCspForInlineScript(upstreamCsp);
+    if (patched !== null) {
+      nonceAttr = ` nonce="${patched.nonce}"`;
+      headers.set("Content-Security-Policy", patched.csp);
+    }
+  }
+
   return new Response(
-    `${decodedPage}<script>navigator.serviceWorker.register("/__swcrypts_sw.js",{scope:"/"});navigator.serviceWorker.ready.then(r=>{r.active.postMessage(localStorage.getItem("__swcrypts_hashed_password"))})</script>`,
+    `${decodedPage}<script${nonceAttr}>navigator.serviceWorker.register("/__swcrypts_sw.js",{scope:"/"});navigator.serviceWorker.ready.then(r=>{r.active.postMessage(localStorage.getItem("__swcrypts_hashed_password"))})</script>`,
     {
       status: resp.status,
       statusText: resp.statusText,

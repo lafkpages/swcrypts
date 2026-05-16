@@ -9,7 +9,7 @@ import { fileIsEntryPoint, filterIgnoredFiles } from "../files";
 import _wrapper from "../../../dist/wrapper/index.html";
 const wrapperHtml = _wrapper as unknown as string;
 
-import _sw from "../../../dist/wrapper/sw.js" with { type: "text" };
+import _sw from "../../../dist/wrapper/index.js" with { type: "text" };
 const sw = _sw as unknown as string;
 
 export default defineCommand({
