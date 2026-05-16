@@ -1,6 +1,6 @@
 import { defineCommand, option } from "@bunli/core";
 import { readdir, rm } from "node:fs/promises";
-import { join } from "node:path";
+import { join, relative } from "node:path";
 import { z } from "zod";
 import { encrypt, generateRandomSalt, hashPassword } from "../..";
 import { loadConfig } from "../config";
@@ -41,7 +41,11 @@ export default defineCommand({
     const config = await loadConfig(flags.config, flags.indir);
 
     const files = filterIgnoredFiles(
-      await readdir(flags.indir, { recursive: true }),
+      (await readdir(flags.indir, { recursive: true, withFileTypes: true }))
+        .filter((entry) => entry.isFile())
+        .map((entry) =>
+          relative(flags.indir, join(entry.parentPath, entry.name)),
+        ),
     );
 
     if (files.length === 0) {
