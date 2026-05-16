@@ -62,14 +62,18 @@ async function fetchAsset(request: Request) {
   const encryptedData = await resp.bytes();
   const decryptedData = await decrypt(encryptedData, hashedPassword);
 
+  const headers = new Headers(resp.headers);
+  headers.set(
+    "Content-Type",
+    contentType(url.pathname.replace(/^.*\/|\.enc$/g, "")) ||
+      "application/octet-stream",
+  );
+  headers.set("X-Content-Type-Options", "nosniff");
+
   return new Response(decryptedData, {
-    ...resp,
-    headers: {
-      ...resp.headers,
-      "Content-Type":
-        contentType(url.pathname.replace(/^.*\/|\.enc$/g, "")) ||
-        "application/octet-stream",
-    },
+    status: resp.status,
+    statusText: resp.statusText,
+    headers,
   });
 }
 
@@ -97,14 +101,15 @@ async function fetchEntryPoint(request: Request) {
   const decryptedPage = await decrypt(encryptedPage, hashedPassword);
   const decodedPage = new TextDecoder().decode(decryptedPage);
 
+  const headers = new Headers(resp.headers);
+  headers.set("Content-Type", "text/html");
+
   return new Response(
     `${decodedPage}<script>navigator.serviceWorker.register("/__swcrypts_sw.js",{scope:"/"});navigator.serviceWorker.ready.then(r=>{r.active.postMessage(localStorage.getItem("__swcrypts_hashed_password"))})</script>`,
     {
-      ...resp,
-      headers: {
-        ...resp.headers,
-        "Content-Type": "text/html",
-      },
+      status: resp.status,
+      statusText: resp.statusText,
+      headers,
     },
   );
 }
