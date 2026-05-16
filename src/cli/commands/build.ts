@@ -30,6 +30,11 @@ export default defineCommand({
       description:
         "Path to config file. If not provided, the CLI will look for a config file in the input directory and CWD.",
     }),
+    password: option(z.string().optional(), {
+      short: "p",
+      description:
+        "Password for encryption. Be careful with this option as it may expose your password in command history.",
+    }),
     salt: option(z.string().optional(), { short: "s" }),
   },
   handler: async ({ flags, prompt }) => {
@@ -47,7 +52,17 @@ export default defineCommand({
 
     console.log(`Found ${files.length} files to encrypt.`);
 
-    const password = await prompt.password("Enter password:");
+    const password =
+      flags.password ||
+      config.password ||
+      (await prompt.password("Enter password:"));
+
+    if (!password) {
+      console.error("Password is required for encryption.");
+      process.exitCode = 1;
+      return;
+    }
+
     let salt =
       flags.salt ||
       config.salt ||

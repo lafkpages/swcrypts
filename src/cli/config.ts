@@ -3,6 +3,7 @@ import { readdir } from "node:fs/promises";
 import { join } from "node:path";
 
 export interface SwCryptsConfig {
+  password?: string;
   salt?: string;
 }
 
