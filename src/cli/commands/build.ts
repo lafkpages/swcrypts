@@ -55,6 +55,7 @@ export default defineCommand({
     const password =
       flags.password ||
       config.password ||
+      process.env.SWCRYPTS_PASSWORD ||
       (await prompt.password("Enter password:"));
 
     if (!password) {
@@ -66,6 +67,7 @@ export default defineCommand({
     let salt =
       flags.salt ||
       config.salt ||
+      process.env.SWCRYPTS_SALT ||
       (await prompt.password("Enter salt (or leave empty for random):"));
 
     if (!salt) {
