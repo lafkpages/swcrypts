@@ -117,7 +117,10 @@ async function sendHashedPasswordAndReload(hashedPassword: string) {
   const registration = await navigator.serviceWorker.ready;
 
   if (registration.active) {
-    registration.active.postMessage(hashedPassword);
+    registration.active.postMessage({
+      type: "swcrypts:setHashedPassword",
+      hashedPassword,
+    });
   } else {
     console.error(
       "No active service worker found to send the hashed password to.",

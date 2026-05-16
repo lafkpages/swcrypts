@@ -41,8 +41,18 @@ self.addEventListener("fetch", (e) => {
 });
 
 self.addEventListener("message", (e) => {
-  if (typeof e.data !== "string") return;
-  hashedPassword = e.data;
+  const data = e.data as unknown;
+
+  if (
+    data &&
+    typeof data === "object" &&
+    "type" in data &&
+    data.type === "swcrypts:setHashedPassword" &&
+    "hashedPassword" in data &&
+    typeof data.hashedPassword === "string"
+  ) {
+    hashedPassword = data.hashedPassword;
+  }
 });
 
 async function fetchAsset(request: Request) {
