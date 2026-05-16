@@ -32,6 +32,9 @@ jobs:
       - name: Build wrapper
         run: bun run build
 
+      - name: Generate CLI command manifest
+        run: bun x bunli generate
+
       - name: Encrypt example site with demo password
         run: bun run ./src/cli/index.ts build -i example -o example-enc -p Hi
 
