@@ -31,8 +31,13 @@ async function findConfigFile(indir?: string) {
   return configFile;
 }
 
-export async function loadConfig(indir?: string): Promise<SwCryptsConfig> {
-  const configFile = await findConfigFile(indir);
+export async function loadConfig(
+  configPath?: string,
+  indir?: string,
+): Promise<SwCryptsConfig> {
+  const configFile = configPath
+    ? Bun.file(configPath)
+    : await findConfigFile(indir);
 
   if (!configFile) {
     return {};
@@ -52,6 +57,16 @@ export async function loadConfig(indir?: string): Promise<SwCryptsConfig> {
         return await configFile.json();
     }
   } catch (error) {
+    if (
+      error &&
+      typeof error === "object" &&
+      "code" in error &&
+      error.code === "ENOENT"
+    ) {
+      console.error(`Config file not found: ${configFile.name}`);
+      process.exit(1);
+    }
+
     console.error(`Error parsing config file ${configFile.name}:`, error);
     process.exit(1);
   }

@@ -24,13 +24,24 @@ const buildCommand = defineCommand({
   name: "build" as const,
   description: "Build and encrypt assets for deployment",
   options: {
-    indir: option(z.string(), { short: "i" }),
-    outdir: option(z.string(), { short: "o" }),
+    indir: option(z.string(), {
+      short: "i",
+      description: "Input directory containing static site to encrypt.",
+    }),
+    outdir: option(z.string(), {
+      short: "o",
+      description: "Output directory for encrypted site.",
+    }),
 
+    config: option(z.string().optional(), {
+      short: "c",
+      description:
+        "Path to config file. If not provided, the CLI will look for a config file in the input directory and CWD.",
+    }),
     salt: option(z.string().optional(), { short: "s" }),
   },
   handler: async ({ flags, prompt }) => {
-    const config = await loadConfig(flags.indir);
+    const config = await loadConfig(flags.config, flags.indir);
 
     const files = filterIgnoredFiles(
       await readdir(flags.indir, { recursive: true }),
@@ -46,6 +57,7 @@ const buildCommand = defineCommand({
 
     const password = await prompt.password("Enter password:");
     let salt =
+      flags.salt ||
       config.salt ||
       (await prompt.password("Enter salt (or leave empty for random):"));
 
