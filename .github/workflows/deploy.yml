@@ -36,7 +36,9 @@ jobs:
         run: bun x bunli generate
 
       - name: Encrypt example site with demo password
-        run: bun run ./src/cli/index.ts build -i example -o example-enc -p Hi
+        env:
+          SWCRYPTS_PASSWORD: Hi
+        run: bun run ./src/cli/index.ts build -i example -o example-enc
 
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3
