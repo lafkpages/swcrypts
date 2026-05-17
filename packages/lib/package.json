@@ -1,0 +1,37 @@
+{
+  "name": "@swcrypts/core",
+  "version": "0.0.1",
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./files": {
+      "types": "./dist/files.d.ts",
+      "default": "./dist/files.js"
+    },
+    "./hex": {
+      "types": "./dist/hex.d.ts",
+      "default": "./dist/hex.js"
+    },
+    "./salt": {
+      "types": "./dist/salt.d.ts",
+      "default": "./dist/salt.js"
+    },
+    "./wrapper": {
+      "types": "./dist/wrapper.d.ts",
+      "default": "./dist/wrapper.js"
+    }
+  },
+  "devDependencies": {
+    "@types/bun": "catalog:",
+    "@types/mime-types": "^3.0.1",
+    "dts-bundle-generator": "^9.5.1",
+    "htmlnano": "^3.3.1",
+    "mime-types": "^3.0.2"
+  },
+  "scripts": {
+    "build": "bun run ./scripts/build.ts"
+  }
+}

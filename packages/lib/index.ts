@@ -1,5 +1,7 @@
 import { bytesToHexString, hexStringToBytes } from "./hex";
 
+export const serviceWorkerFileName = "__swcrypts_sw.js";
+
 const encoder = new TextEncoder();
 
 export async function encrypt(
@@ -72,8 +74,4 @@ export async function hashPassword(password: string, salt: string) {
       ),
     ),
   );
-}
-
-export function generateRandomSalt() {
-  return bytesToHexString(crypto.getRandomValues(new Uint8Array(16)));
 }

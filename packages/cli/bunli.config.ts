@@ -7,7 +7,10 @@ export default defineConfig({
   version,
   description,
   commands: {
-    entry: "./src/cli/index.ts",
-    directory: "./src/cli/commands",
+    entry: "./index.ts",
+    directory: "./commands",
+  },
+  build: {
+    minify: true,
   },
 });

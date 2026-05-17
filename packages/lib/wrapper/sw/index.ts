@@ -2,7 +2,7 @@
 /// <reference lib="webworker" />
 
 import { contentType } from "mime-types";
-import { decrypt } from "../../..";
+import { decrypt, serviceWorkerFileName } from "../..";
 import { patchCspForInlineScript } from "./csp";
 
 declare const self: ServiceWorkerGlobalScope;
@@ -127,7 +127,7 @@ async function fetchEntryPoint(request: Request) {
   }
 
   return new Response(
-    `${decodedPage}<script${nonceAttr}>navigator.serviceWorker.register("/__swcrypts_sw.js",{scope:"/"});navigator.serviceWorker.ready.then(r=>{r.active.postMessage(localStorage.getItem("__swcrypts_hashed_password"))})</script>`,
+    `${decodedPage}<script${nonceAttr}>navigator.serviceWorker.register("/${serviceWorkerFileName}",{scope:"/"});navigator.serviceWorker.ready.then(r=>{r.active.postMessage(localStorage.getItem("__swcrypts_hashed_password"))})</script>`,
     {
       status: resp.status,
       statusText: resp.statusText,

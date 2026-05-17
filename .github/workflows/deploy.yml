@@ -30,15 +30,15 @@ jobs:
         run: bun install --frozen-lockfile
 
       - name: Build wrapper
-        run: bun run build
+        run: bun run --cwd packages/lib build
 
-      - name: Generate CLI command manifest
-        run: bun x bunli generate
+      - name: Build CLI
+        run: bun run --cwd packages/cli build
 
       - name: Encrypt example site with demo password
         env:
           SWCRYPTS_PASSWORD: Hi
-        run: bun run ./src/cli/index.ts build -i example -o example-enc
+        run: bun run ./packages/cli/index.ts build -i example -o example-enc
 
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3

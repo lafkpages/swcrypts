@@ -1,0 +1,20 @@
+{
+  "name": "swcrypts",
+  "description": "Encrypt static sites.",
+  "version": "0.0.2",
+  "type": "module",
+  "module": "src/index.ts",
+  "private": true,
+  "devDependencies": {
+    "@types/bun": "catalog:",
+    "bunli": "^0.9.1"
+  },
+  "dependencies": {
+    "@bunli/core": "^0.9.1",
+    "@swcrypts/core": "workspace:",
+    "zod": "^4.4.3"
+  },
+  "scripts": {
+    "build": "bunli build"
+  }
+}

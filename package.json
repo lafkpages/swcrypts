@@ -1,23 +1,11 @@
 {
-  "name": "swcrypts",
-  "description": "Encrypt static sites.",
-  "version": "0.0.1",
-  "type": "module",
-  "module": "src/index.ts",
-  "private": true,
-  "devDependencies": {
-    "@types/bun": "latest",
-    "@types/mime-types": "^3.0.1",
-    "bunli": "^0.9.1",
-    "mime-types": "^3.0.2"
+  "workspaces": [
+    "packages/*"
+  ],
+  "catalog": {
+    "@types/bun": "latest"
   },
   "peerDependencies": {
     "typescript": "^6.0.3"
-  },
-  "dependencies": {
-    "@bunli/core": "^0.9.1"
-  },
-  "scripts": {
-    "build": "bun run ./scripts/build.ts"
   }
 }

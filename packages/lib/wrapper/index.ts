@@ -1,6 +1,6 @@
 /// <reference lib="dom" />
 
-import { decrypt, hashPassword } from "../..";
+import { decrypt, hashPassword, serviceWorkerFileName } from "..";
 
 let failed = false;
 
@@ -43,7 +43,7 @@ async function setupUi() {
   if (!failed) {
     if ("serviceWorker" in navigator) {
       const registration = await navigator.serviceWorker.register(
-        "/__swcrypts_sw.js",
+        `/${serviceWorkerFileName}`,
         { scope: "/" },
       );
 
