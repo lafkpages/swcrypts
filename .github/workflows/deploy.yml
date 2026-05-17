@@ -38,7 +38,7 @@ jobs:
       - name: Encrypt example site with demo password
         env:
           SWCRYPTS_PASSWORD: Hi
-        run: bun run ./packages/cli/index.ts build -i example -o example-enc
+        run: bun run --cwd packages/cli . build -i ../../example -o ../../example-enc
 
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3
