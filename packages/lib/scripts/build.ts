@@ -6,6 +6,8 @@ import { rm } from "node:fs/promises";
 
 await rm("dist", { recursive: true, force: true });
 
+await $`ln -f ../../README.md`;
+
 const wrapperHtmlBuild = await build({
   entrypoints: ["./wrapper/index.html"],
   compile: true,
