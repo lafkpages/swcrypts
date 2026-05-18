@@ -3,6 +3,13 @@ name: Deploy demo to GitHub Pages
 on:
   push:
     branches: [main]
+    paths:
+      - "packages/lib/**"
+      - "packages/cli/**"
+      - "example/**"
+      - ".github/workflows/deploy.yml"
+      - "package.json"
+      - "bun.lock"
   workflow_dispatch:
 
 permissions:
@@ -10,6 +17,7 @@ permissions:
   pages: write
   id-token: write
 
+# Only allow one deploy at a time; cancel any in-progress run if a new one starts
 concurrency:
   group: pages
   cancel-in-progress: true
