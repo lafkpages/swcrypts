@@ -1,5 +1,9 @@
 # SwCrypts
 
+![CI](https://img.shields.io/github/check-runs/lafkpages/swcrypts/main)
+
+<br>
+
 Encrypt static sites.
 
 ## Live demo
@@ -7,6 +11,22 @@ Encrypt static sites.
 Try the encrypted demo site at **[swcrypts.luisafk.dev](https://swcrypts.luisafk.dev/)**.
 
 **Password:** `Hi`
+
+## Usage
+
+To encrypt a static site in the `public` directory and output to `public-encrypted`, run:
+
+```sh
+# NOTE: temporary until CLI is published
+bun run --cwd packages/cli . build -i public -o public-encrypted
+```
+
+The `public` directory may contain any sort of static files — HTML, CSS, JS, images, JSON data, whatever. The `public-encrypted` directory will contain the encrypted output, which can be served statically over HTTPS.
+
+The encrypted output consists of:
+
+- `.html` files, which have a wrapper added to them to prompt users for the password and decrypt the site
+- `.enc` files, which contain the rest of the encrypted static files
 
 ## Security
 
@@ -46,3 +66,10 @@ Do **not** use:
 - Anything based on words, names, dates, or patterns.
 
 Generate passwords with a password manager's random generator, `openssl rand -hex 32`, or equivalent.
+
+## Contributing
+
+1. Fork the repo and run `bun install` to install dependencies.
+2. This project has no tests yet 🥶 so don't worry about that, just test manually or sm idk
+3. Submit a PR with a clear description of the change.
+4. Be nice and be happy
