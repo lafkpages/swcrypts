@@ -33,9 +33,9 @@ Pick **one** of the following — all give comfortably more than the post‑quan
 
 | Scheme                                             | Length     | Approx. entropy |
 | -------------------------------------------------- | ---------- | --------------- |
-| Random alphanumeric (a–z, A–Z, 0–9)                | ≥ 22 chars | ~131 bits       |
-| Random alphanumeric + symbols (94 printable ASCII) | ≥ 20 chars | ~131 bits       |
-| Diceware passphrase (EFF long list)                | ≥ 10 words | ~129 bits       |
+| Random alphanumeric (a–z, A–Z, 0–9)                | ≥ 43 chars | ~256 bits       |
+| Random alphanumeric + symbols (94 printable ASCII) | ≥ 39 chars | ~256 bits       |
+| Diceware passphrase (EFF long list)                | ≥ 20 words | ~259 bits       |
 
 A **64‑character random password from the 94‑printable‑ASCII set** carries ~419 bits of entropy. That is dramatically more than needed and leaves a huge safety margin even against future improvements in cryptanalysis.
 
@@ -45,4 +45,4 @@ Do **not** use:
 - Passwords reused from any other site.
 - Anything based on words, names, dates, or patterns.
 
-Generate passwords with a password manager's random generator, `openssl rand -base64 24`, or equivalent.
+Generate passwords with a password manager's random generator, `openssl rand -hex 32`, or equivalent.
