@@ -1,11 +1,13 @@
+import { readdir, rm } from "node:fs/promises";
+import { join, relative } from "node:path";
+
 import { defineCommand, option } from "@bunli/core";
+import { z } from "zod";
+
 import { encrypt, hashPassword, serviceWorkerFileName } from "@swcrypts/core";
 import { fileIsEntryPoint, filterIgnoredFiles } from "@swcrypts/core/files";
 import { generateRandomSalt, isValidSalt } from "@swcrypts/core/salt";
 import { getServiceWorkerJs, getWrapperHtml } from "@swcrypts/core/wrapper";
-import { readdir, rm } from "node:fs/promises";
-import { join, relative } from "node:path";
-import { z } from "zod";
 import { loadConfig } from "../config";
 
 export default defineCommand({

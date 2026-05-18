@@ -2,6 +2,7 @@
 /// <reference lib="webworker" />
 
 import { contentType } from "mime-types";
+
 import { decrypt, serviceWorkerFileName } from "../..";
 import { patchCspForInlineScript } from "./csp";
 

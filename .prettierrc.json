@@ -1,0 +1,17 @@
+{
+  "plugins": ["@ianvs/prettier-plugin-sort-imports"],
+
+  "importOrderTypeScriptVersion": "6.0.3",
+  "importOrderParserPlugins": ["typescript"],
+  "importOrder": [
+    "<TYPES>",
+    "<TYPES>^[.]",
+    "",
+    "<BUILTIN_MODULES>",
+    "",
+    "<THIRD_PARTY_MODULES>",
+    "",
+    "^@?swcrypts/",
+    "^[.]"
+  ]
+}

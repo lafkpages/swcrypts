@@ -6,6 +6,8 @@ out
 dist
 *.tgz
 /example-enc
+/packages/lib/wrapper-dist
+/packages/lib/README.md
 
 # code coverage
 coverage
@@ -27,6 +29,7 @@ report.[0-9]_.[0-9]_.[0-9]_.[0-9]_.json
 .eslintcache
 .cache
 *.tsbuildinfo
+.bunli
 
 # IntelliJ based IDEs
 .idea

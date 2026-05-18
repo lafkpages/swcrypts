@@ -1,8 +1,9 @@
 /// <reference types="bun" />
 
+import { rm } from "node:fs/promises";
+
 import { $, build, write } from "bun";
 import { process } from "htmlnano";
-import { rm } from "node:fs/promises";
 
 await rm("dist", { recursive: true, force: true });
 
@@ -21,6 +22,8 @@ const wrapperHtmlBuild = await build({
 const wrapperHtmlMinified = await process(
   await wrapperHtmlBuild.outputs[0]!.text(),
   {
+    collapseWhitespace: "all",
+
     // CSS and JS are already minified by Bun
     minifyCss: false,
     minifyJs: false,

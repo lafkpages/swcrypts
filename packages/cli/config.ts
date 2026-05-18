@@ -1,4 +1,6 @@
-import { JSON5, JSONC, type BunFile } from "bun";
+import type { BunFile } from "bun";
+
+import { JSON5, JSONC } from "bun";
 import { readdir } from "node:fs/promises";
 import { join } from "node:path";
 
