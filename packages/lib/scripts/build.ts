@@ -1,8 +1,8 @@
 /// <reference types="bun" />
 
+import { $, build, write } from "bun";
 import { rm } from "node:fs/promises";
 
-import { $, build, write } from "bun";
 import { process } from "htmlnano";
 
 await rm("dist", { recursive: true, force: true });

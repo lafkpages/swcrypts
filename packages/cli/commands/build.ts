@@ -1,5 +1,5 @@
 import { readdir, rm } from "node:fs/promises";
-import { join, relative } from "node:path";
+import { join, relative, resolve } from "node:path";
 
 import { defineCommand, option } from "@bunli/core";
 import { z } from "zod";
@@ -34,9 +34,13 @@ export default defineCommand({
         "Password for encryption. Be careful with this option as it may expose your password in command history.",
     }),
     salt: option(z.string().optional(), { short: "s" }),
+    customStyles: option(z.string().optional(), {
+      description:
+        "Path to a CSS file to override the default styling of SwCrypts' password prompt page. Note that this is NOT sanitised and XSS is possible.",
+    }),
   },
   handler: async ({ flags, prompt }) => {
-    const config = await loadConfig(flags.config, flags.indir);
+    const [config, configPath] = await loadConfig(flags.config, flags.indir);
 
     const files = filterIgnoredFiles(
       (await readdir(flags.indir, { recursive: true, withFileTypes: true }))
@@ -94,6 +98,15 @@ export default defineCommand({
 
     const passwordHash = await hashPassword(password, salt);
 
+    const customStylesPath =
+      flags.customStyles ||
+      (config.customStyles && configPath
+        ? resolve(configPath, "..", config.customStyles)
+        : null);
+    const customStyles = customStylesPath
+      ? await Bun.file(customStylesPath).text()
+      : null;
+
     await rm(flags.outdir, { recursive: true, force: true });
 
     const assets: string[] = [];
@@ -121,7 +134,9 @@ export default defineCommand({
       let dataToWrite: Uint8Array | string;
 
       if (isEntryPoint) {
-        dataToWrite = getWrapperHtml(encryptedData, salt);
+        dataToWrite = getWrapperHtml(encryptedData, salt, {
+          customStyles,
+        });
       } else {
         dataToWrite = encryptedData;
         assets.push("/" + relativeFilePath);

@@ -36,8 +36,11 @@ button {
   border-radius: 0.25em;
 }
 
-button[type="submit"] {
+button {
   cursor: pointer;
+}
+
+button[type="submit"] {
   background: aquamarine;
 }
 

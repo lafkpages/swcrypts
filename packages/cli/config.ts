@@ -1,16 +1,22 @@
+import type { WrapperOptions } from "@swcrypts/core/wrapper";
 import type { BunFile } from "bun";
 
 import { JSON5, JSONC } from "bun";
 import { readdir } from "node:fs/promises";
-import { join } from "node:path";
+import { join, resolve } from "node:path";
 
 export interface SwCryptsConfig {
   password?: string;
   salt?: string;
+
+  /**
+   * @see {@link WrapperOptions["customStyles"]}
+   */
+  customStyles?: string;
 }
 
 async function findConfigFile(indir?: string) {
-  let configFile: BunFile | null = null;
+  let configFile: string | null = null;
 
   const files = await readdir(".");
 
@@ -27,7 +33,7 @@ async function findConfigFile(indir?: string) {
         process.exit(1);
       }
 
-      configFile = Bun.file(file);
+      configFile = file;
     }
   }
 
@@ -35,29 +41,30 @@ async function findConfigFile(indir?: string) {
 }
 
 export async function loadConfig(
-  configPath?: string,
+  configPath?: string | null,
   indir?: string,
-): Promise<SwCryptsConfig> {
-  const configFile = configPath
-    ? Bun.file(configPath)
-    : await findConfigFile(indir);
-
-  if (!configFile) {
-    return {};
+): Promise<[SwCryptsConfig, string | null]> {
+  if (!configPath) {
+    configPath = await findConfigFile(indir);
   }
 
-  const type = configFile.name![configFile.name!.length - 1];
+  if (!configPath) {
+    return [{}, null];
+  }
+
+  const configFile = Bun.file(configPath);
+  const configFileType = configPath[configPath.length - 1]!;
 
   try {
-    switch (type) {
+    switch (configFileType) {
       case "5":
         // @ts-expect-error
-        return JSON5.parse(await configFile.text());
+        return [JSON5.parse(await configFile.text()), configPath];
       case "c":
         // @ts-expect-error
-        return JSONC.parse(await configFile.text());
+        return [JSONC.parse(await configFile.text()), configPath];
       default:
-        return await configFile.json();
+        return [await configFile.json(), configPath];
     }
   } catch (error) {
     if (
