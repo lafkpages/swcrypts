@@ -2,6 +2,12 @@
 
 Encrypt static sites.
 
+## Live demo
+
+Try the encrypted demo site at **[swcrypts.luisafk.dev](https://swcrypts.luisafk.dev/)**.
+
+**Password:** `Hi`
+
 ## Security
 
 ### Transport integrity
