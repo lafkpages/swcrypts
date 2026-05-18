@@ -1,5 +1,6 @@
 # SwCrypts
 
+![GitHub Licence](https://img.shields.io/github/license/lafkpages/swcrypts)
 ![CI](https://img.shields.io/github/check-runs/lafkpages/swcrypts/main)
 
 <br>
