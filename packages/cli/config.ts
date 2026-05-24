@@ -1,10 +1,9 @@
 import type { WrapperOptions } from "@swcrypts/core/wrapper";
 import type { BunFile } from "bun";
 
+import { JSON5, JSONC } from "bun";
 import { readdir } from "node:fs/promises";
 import { join, resolve } from "node:path";
-
-import { JSON5, JSONC } from "bun";
 
 export interface SwCryptsConfig {
   password?: string;

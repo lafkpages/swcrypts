@@ -15,6 +15,20 @@ export interface WrapperOptions {
   customStyles?: string | null;
 
   /**
+   * The title shown in the wrapper page. Note that this is **NOT sanitised or escaped**.
+   *
+   * @default "This page is encrypted!"
+   */
+  title?: string;
+
+  /**
+   * The message shown in the wrapper page. Note that this is **NOT sanitised or escaped**.
+   *
+   * @default "Please enter the password to view the content."
+   */
+  message?: string;
+
+  /**
    * Whether to show the "Powered by SwCrypts" attribution link in the
    * password prompt page.
    *
@@ -25,6 +39,8 @@ export interface WrapperOptions {
 
 const defaultWrapperOptions: Required<WrapperOptions> = {
   customStyles: null,
+  title: "This page is encrypted!",
+  message: "Please enter the password to view the content.",
   includeAttribution: true,
 };
 
@@ -37,7 +53,9 @@ export function getWrapperHtml(
 
   let html = wrapperHtml
     .replace('"{{ENCRYPTED_PAGE}}"', JSON.stringify(encryptedPage.toBase64()))
-    .replace('"{{SALT}}"', JSON.stringify(salt));
+    .replace('"{{SALT}}"', JSON.stringify(salt))
+    .replaceAll("{{TITLE}}", resolvedOptions.title)
+    .replace("{{MESSAGE}}", resolvedOptions.message);
 
   if (resolvedOptions.customStyles) {
     html = html.replace("</style>", `${resolvedOptions.customStyles}</style>`);
