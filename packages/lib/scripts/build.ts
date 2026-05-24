@@ -2,6 +2,7 @@
 
 import { $, build, write } from "bun";
 import { rm } from "node:fs/promises";
+import { argv } from "node:process";
 
 import { process } from "htmlnano";
 
@@ -50,8 +51,12 @@ await build({
   format: "esm",
 });
 
-// Generate bundled type declarations for each entry point
-for (const entry of libExports) {
-  const outFile = entry.replace(".ts", ".d.ts");
-  await $`bun run -b dts-bundle-generator --no-check -o dist/${outFile} ${entry}`.quiet();
+const skipTypes = argv.includes("--skip-types");
+
+if (!skipTypes) {
+  // Generate bundled type declarations for each entry point
+  for (const entry of libExports) {
+    const outFile = entry.replace(".ts", ".d.ts");
+    await $`bun run -b dts-bundle-generator --no-check -o dist/${outFile} ${entry}`.quiet();
+  }
 }
