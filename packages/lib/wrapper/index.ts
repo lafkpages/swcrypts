@@ -17,6 +17,8 @@ const encryptedPage = Uint8Array.fromBase64("{{ENCRYPTED_PAGE}}");
 if (failed) {
   setupUi();
 } else {
+  await registerServiceWorker();
+
   const storedHashedPassword = localStorage.getItem(hashedPasswordKey);
 
   if (storedHashedPassword) {
@@ -40,28 +42,6 @@ if (failed) {
 }
 
 async function setupUi() {
-  if (!failed) {
-    if ("serviceWorker" in navigator) {
-      const registration = await navigator.serviceWorker.register(
-        `/${serviceWorkerFileName}`,
-        { scope: "/" },
-      );
-
-      if (registration.installing) {
-        console.debug("SwCrypts service worker installing");
-      } else if (registration.waiting) {
-        console.debug("SwCrypts service worker installed");
-      } else if (registration.active) {
-        console.debug("SwCrypts service worker active");
-      }
-    } else {
-      alert(
-        "Service workers are not supported in this browser. Please use a modern browser that supports service workers to access this page.",
-      );
-      failed = true;
-    }
-  }
-
   if (document.readyState === "complete") {
     onDocumentLoad();
   } else {
@@ -111,6 +91,28 @@ function onDocumentLoad() {
       sendHashedPasswordAndReload(hashedPassword);
     }
   });
+}
+
+async function registerServiceWorker() {
+  if ("serviceWorker" in navigator) {
+    const registration = await navigator.serviceWorker.register(
+      `/${serviceWorkerFileName}`,
+      { scope: "/" },
+    );
+
+    if (registration.installing) {
+      console.debug("SwCrypts service worker installing");
+    } else if (registration.waiting) {
+      console.debug("SwCrypts service worker installed");
+    } else if (registration.active) {
+      console.debug("SwCrypts service worker active");
+    }
+  } else {
+    alert(
+      "Service workers are not supported in this browser. Please use a modern browser that supports service workers to access this page.",
+    );
+    failed = true;
+  }
 }
 
 async function sendHashedPasswordAndReload(hashedPassword: string) {
