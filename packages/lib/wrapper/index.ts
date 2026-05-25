@@ -12,7 +12,8 @@ if (location.protocol !== "https:" && location.hostname !== "localhost") {
 }
 
 const hashedPasswordKey = "__swcrypts_hashed_password";
-const encryptedPage = Uint8Array.fromBase64("{{ENCRYPTED_PAGE}}");
+const cryptoCheck = Uint8Array.fromBase64("{{CRYPTOCHECK}}");
+const cryptoCheckExpectedLength = 64;
 
 if (failed) {
   setupUi();
@@ -22,17 +23,18 @@ if (failed) {
   const storedHashedPassword = localStorage.getItem(hashedPasswordKey);
 
   if (storedHashedPassword) {
-    let decryptedPage: ArrayBuffer | null = null;
+    let decryptedCheck: ArrayBuffer | null = null;
 
     try {
-      decryptedPage = await decrypt(encryptedPage, storedHashedPassword);
+      decryptedCheck = await decrypt(cryptoCheck, storedHashedPassword);
     } catch (err) {
       console.error("Decryption failed with stored hashed password:", err);
       localStorage.removeItem(hashedPasswordKey);
     }
 
-    if (decryptedPage) {
-      sendHashedPasswordAndReload(storedHashedPassword);
+    if (decryptedCheck?.byteLength === cryptoCheckExpectedLength) {
+      await sendHashedPassword(storedHashedPassword);
+      location.reload();
     } else {
       setupUi();
     }
@@ -73,10 +75,10 @@ function onDocumentLoad() {
     button.disabled = true;
 
     const hashedPassword = await hashPassword(password, "{{SALT}}");
-    let decryptedPage: ArrayBuffer | null = null;
+    let decryptedCheck: ArrayBuffer | null = null;
 
     try {
-      decryptedPage = await decrypt(encryptedPage, hashedPassword);
+      decryptedCheck = await decrypt(cryptoCheck, hashedPassword);
     } catch (err) {
       console.error("Decryption failed:", err);
       alert("Incorrect password, please try again.");
@@ -86,9 +88,10 @@ function onDocumentLoad() {
       button.disabled = false;
     }
 
-    if (decryptedPage !== null) {
+    if (decryptedCheck?.byteLength === cryptoCheckExpectedLength) {
       localStorage.setItem(hashedPasswordKey, hashedPassword);
-      sendHashedPasswordAndReload(hashedPassword);
+      await sendHashedPassword(hashedPassword);
+      location.reload();
     }
   });
 }
@@ -115,7 +118,7 @@ async function registerServiceWorker() {
   }
 }
 
-async function sendHashedPasswordAndReload(hashedPassword: string) {
+async function sendHashedPassword(hashedPassword: string) {
   const registration = await navigator.serviceWorker.ready;
 
   if (registration.active) {
@@ -128,6 +131,4 @@ async function sendHashedPasswordAndReload(hashedPassword: string) {
       "No active service worker found to send the hashed password to.",
     );
   }
-
-  location.reload();
 }

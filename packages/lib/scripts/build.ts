@@ -23,7 +23,7 @@ const wrapperHtmlBuild = await build({
 const wrapperHtmlMinified = await process(
   await wrapperHtmlBuild.outputs[0]!.text(),
   {
-    collapseWhitespace: "all",
+    collapseWhitespace: "aggressive",
 
     // CSS and JS are already minified by Bun
     minifyCss: false,

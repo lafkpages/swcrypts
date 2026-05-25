@@ -4,10 +4,7 @@ export const serviceWorkerFileName = "__swcrypts_sw.js";
 
 const encoder = new TextEncoder();
 
-export async function encrypt(
-  data: Uint8Array<ArrayBuffer>,
-  hashedPassword: string,
-) {
+export async function encrypt(data: BufferSource, hashedPassword: string) {
   const iv = crypto.getRandomValues(new Uint8Array(12));
 
   const ciphertext = new Uint8Array(

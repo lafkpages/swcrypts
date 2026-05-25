@@ -8,6 +8,8 @@ import { patchCspForInlineScript } from "./csp";
 
 declare const self: ServiceWorkerGlobalScope;
 
+const swCryptsTypeHeader = "X-SwCrypts-Type";
+
 const assets = ["{{ASSETS}}"];
 let hashedPassword: string | null = null;
 
@@ -25,20 +27,16 @@ self.addEventListener("fetch", (e) => {
   const url = new URL(e.request.url);
 
   if (assets.includes(url.pathname)) {
-    console.debug(
-      "SwCrypts service worker intercepting fetch for asset",
-      url.pathname,
-    );
-
-    e.respondWith(fetchAsset(e.request));
-
+    e.respondWith(fetchAsset(url, e.request));
     return;
   } else if (e.request.mode === "navigate") {
-    e.respondWith(fetchEntryPoint(e.request));
+    e.respondWith(fetchEntryPoint(url, e.request));
     return;
   }
 
-  e.respondWith(fetch(e.request));
+  e.respondWith(
+    fetch(e.request).then((resp) => cloneResponseInjectHeaders(resp, "none")),
+  );
 });
 
 self.addEventListener("message", (e) => {
@@ -56,32 +54,35 @@ self.addEventListener("message", (e) => {
   }
 });
 
-async function fetchAsset(request: Request) {
+async function fetchAsset(url: URL, request: Request) {
+  console.debug(
+    "SwCrypts service worker intercepting fetch for asset",
+    url.pathname,
+  );
+
   if (!hashedPassword) {
     return new Response("Unauthorized SwCrypts", {
       status: 401,
+      headers: {
+        [swCryptsTypeHeader]: "asset; unauthed",
+      },
     });
   }
 
-  const url = new URL(request.url);
-  url.pathname += ".enc";
-
-  const resp = await fetch(url, request);
+  const [, resp, decryptedData] = await fetchAndDecrypt(request);
 
   if (!resp.ok) {
-    return resp;
+    return cloneResponseInjectHeaders(resp, "asset");
   }
-
-  const encryptedData = await resp.bytes();
-  const decryptedData = await decrypt(encryptedData, hashedPassword);
 
   const headers = new Headers(resp.headers);
   headers.set(
     "Content-Type",
-    contentType(url.pathname.replace(/^.*\/|\.enc$/g, "")) ||
+    contentType(url.pathname.replace(/^.*\//, "")) ||
       "application/octet-stream",
   );
   headers.set("X-Content-Type-Options", "nosniff");
+  headers.set(swCryptsTypeHeader, "asset");
 
   return new Response(decryptedData, {
     status: resp.status,
@@ -90,32 +91,30 @@ async function fetchAsset(request: Request) {
   });
 }
 
-async function fetchEntryPoint(request: Request) {
-  const resp = await fetch(request);
+async function fetchEntryPoint(url: URL, request: Request) {
+  console.debug(
+    "SwCrypts service worker intercepting fetch for entrypoint",
+    url.pathname,
+  );
 
   if (!hashedPassword) {
-    return resp;
+    return cloneResponseInjectHeaders(
+      await fetch(request),
+      "entrypoint; unauthed",
+    );
   }
 
-  if (!resp.ok) {
-    return resp;
+  const [, resp, decryptedPage] = await fetchAndDecrypt(request);
+
+  if (!resp.ok || !decryptedPage) {
+    return cloneResponseInjectHeaders(resp, "entrypoint; error");
   }
 
-  const wrapperHtml = await resp.text();
-  const encryptedPageMatch = wrapperHtml.match(
-    /=Uint8Array\.fromBase64\(("[\w+/=]+")\);/,
-  )?.[1];
-
-  if (!encryptedPageMatch) {
-    return resp;
-  }
-
-  const encryptedPage = Uint8Array.fromBase64(JSON.parse(encryptedPageMatch));
-  const decryptedPage = await decrypt(encryptedPage, hashedPassword);
   const decodedPage = new TextDecoder().decode(decryptedPage);
 
   const headers = new Headers(resp.headers);
   headers.set("Content-Type", "text/html");
+  headers.set(swCryptsTypeHeader, "entrypoint");
 
   const upstreamCsp = headers.get("Content-Security-Policy");
   let nonceAttr = "";
@@ -135,4 +134,49 @@ async function fetchEntryPoint(request: Request) {
       headers,
     },
   );
+}
+
+async function fetchAndDecrypt(
+  request: Request,
+): Promise<[URL, Response, ArrayBuffer | null]> {
+  const url = new URL(request.url);
+  url.pathname += url.pathname.endsWith("/") ? "index.html.enc" : ".enc";
+
+  // Cannot reuse the original request as it has mode: "navigate" and navigation
+  // requests cannot be constructed via JS (only by the browser). Either way, we
+  // are fetching a different URL anyway, so we construct a new request.
+  const req = new Request(url, {
+    method: request.method,
+    headers: request.headers,
+    body: request.body,
+    mode: "cors",
+    credentials: request.credentials,
+    cache: request.cache,
+    redirect: request.redirect,
+    referrer: request.referrer,
+    referrerPolicy: request.referrerPolicy,
+    integrity: request.integrity,
+    keepalive: request.keepalive,
+    signal: request.signal,
+  });
+
+  const resp = await fetch(req);
+
+  if (!resp.ok) {
+    return [url, resp, null];
+  }
+
+  const encryptedData = await resp.bytes();
+
+  return [url, resp, await decrypt(encryptedData, hashedPassword)];
+}
+
+function cloneResponseInjectHeaders(resp: Response, swCryptsType: string) {
+  const headers = new Headers(resp.headers);
+  headers.set(swCryptsTypeHeader, swCryptsType);
+  return new Response(resp.body, {
+    status: resp.status,
+    statusText: resp.statusText,
+    headers,
+  });
 }

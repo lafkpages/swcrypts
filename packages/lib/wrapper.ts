@@ -1,3 +1,4 @@
+import { encrypt } from ".";
 import _wrapper from "./wrapper-dist/index.html" with { type: "text" };
 import _swJs from "./wrapper-dist/index.js" with { type: "text" };
 
@@ -5,6 +6,9 @@ const wrapperHtml = _wrapper as unknown as string;
 const swJs = _swJs as unknown as string;
 
 export interface WrapperOptions {
+  cryptoCheck: Uint8Array;
+  salt: string;
+
   /**
    * Custom CSS rules to override the default styling of SwCrypts' password
    * prompt page. Note that this is **NOT sanitised** and is injected directly into
@@ -37,23 +41,22 @@ export interface WrapperOptions {
   includeAttribution?: boolean;
 }
 
-const defaultWrapperOptions: Required<WrapperOptions> = {
+const defaultWrapperOptions = {
   customStyles: null,
   title: "This page is encrypted!",
   message: "Please enter the password to view the content.",
   includeAttribution: true,
-};
+} satisfies Partial<WrapperOptions>;
 
-export function getWrapperHtml(
-  encryptedPage: Uint8Array,
-  salt: string,
-  options?: WrapperOptions,
-) {
+export function getWrapperHtml(options: WrapperOptions) {
   const resolvedOptions = { ...defaultWrapperOptions, ...options };
 
   let html = wrapperHtml
-    .replace('"{{ENCRYPTED_PAGE}}"', JSON.stringify(encryptedPage.toBase64()))
-    .replace('"{{SALT}}"', JSON.stringify(salt))
+    .replace(
+      '"{{CRYPTOCHECK}}"',
+      JSON.stringify(resolvedOptions.cryptoCheck.toBase64()),
+    )
+    .replace('"{{SALT}}"', JSON.stringify(resolvedOptions.salt))
     .replaceAll("{{TITLE}}", resolvedOptions.title)
     .replace("{{MESSAGE}}", resolvedOptions.message);
 
@@ -70,4 +73,11 @@ export function getWrapperHtml(
 
 export function getServiceWorkerJs(assets: string[]) {
   return swJs.replace('["{{ASSETS}}"]', JSON.stringify(assets));
+}
+
+export async function generateCryptoCheck(hashedPassword: string) {
+  return await encrypt(
+    crypto.getRandomValues(new Uint8Array(64)),
+    hashedPassword,
+  );
 }

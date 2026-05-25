@@ -7,7 +7,11 @@ import { z } from "zod";
 import { encrypt, hashPassword, serviceWorkerFileName } from "@swcrypts/core";
 import { fileIsEntryPoint, filterIgnoredFiles } from "@swcrypts/core/files";
 import { generateRandomSalt, isValidSalt } from "@swcrypts/core/salt";
-import { getServiceWorkerJs, getWrapperHtml } from "@swcrypts/core/wrapper";
+import {
+  generateCryptoCheck,
+  getServiceWorkerJs,
+  getWrapperHtml,
+} from "@swcrypts/core/wrapper";
 import { loadConfig } from "../config";
 
 export default defineCommand({
@@ -96,7 +100,8 @@ export default defineCommand({
       return;
     }
 
-    const passwordHash = await hashPassword(password, salt);
+    const hashedPassword = await hashPassword(password, salt);
+    const cryptoCheck = await generateCryptoCheck(hashedPassword);
 
     const customStylesPath =
       flags.customStyles ||
@@ -108,6 +113,12 @@ export default defineCommand({
       : null;
 
     await rm(flags.outdir, { recursive: true, force: true });
+
+    const wrapperHtml = getWrapperHtml({
+      cryptoCheck,
+      salt,
+      customStyles,
+    });
 
     const assets: string[] = [];
 
@@ -125,24 +136,17 @@ export default defineCommand({
 
       const isEntryPoint = fileIsEntryPoint(relativeFilePath);
 
-      const encryptedData = await encrypt(data, passwordHash);
-      const outputFilePath = join(
-        flags.outdir,
-        relativeFilePath + (isEntryPoint ? "" : ".enc"),
-      );
-
-      let dataToWrite: Uint8Array | string;
+      const encryptedData = await encrypt(data, hashedPassword);
+      const outputFilePath = join(flags.outdir, relativeFilePath);
+      const outputFilePathEnc = outputFilePath + ".enc";
 
       if (isEntryPoint) {
-        dataToWrite = getWrapperHtml(encryptedData, salt, {
-          customStyles,
-        });
+        await Bun.write(outputFilePath, wrapperHtml);
       } else {
-        dataToWrite = encryptedData;
         assets.push("/" + relativeFilePath);
       }
 
-      await Bun.write(outputFilePath, dataToWrite);
+      await Bun.write(outputFilePathEnc, encryptedData);
     }
 
     await Bun.write(
