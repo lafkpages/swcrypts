@@ -60,7 +60,7 @@ export default defineCommand({
       return;
     }
 
-    console.log(`Found ${files.length} files to encrypt.`);
+    console.debug(`Found ${files.length} files to encrypt.`);
 
     const password =
       flags.password ||
@@ -137,8 +137,12 @@ export default defineCommand({
       const isEntryPoint = fileIsEntryPoint(relativeFilePath);
 
       const encryptedData = await encrypt(data, hashedPassword);
+      const encryptedPath = (
+        await encrypt(relativeFilePath, hashedPassword, true)
+      ).toHex();
       const outputFilePath = join(flags.outdir, relativeFilePath);
-      const outputFilePathEnc = outputFilePath + ".enc";
+      const outputFilePathEnc =
+        join(flags.outdir, encryptedPath) + ".swcrypts.enc";
 
       if (isEntryPoint) {
         await Bun.write(outputFilePath, wrapperHtml);

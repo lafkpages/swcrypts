@@ -3,7 +3,7 @@
 
 import { contentType } from "mime-types";
 
-import { decrypt, serviceWorkerFileName } from "../..";
+import { decrypt, encrypt, serviceWorkerFileName } from "../..";
 import { patchCspForInlineScript } from "./csp";
 
 declare const self: ServiceWorkerGlobalScope;
@@ -139,8 +139,19 @@ async function fetchEntryPoint(url: URL, request: Request) {
 async function fetchAndDecrypt(
   request: Request,
 ): Promise<[URL, Response, ArrayBuffer | null]> {
+  if (!hashedPassword) {
+    throw new Error();
+  }
+
   const url = new URL(request.url);
-  url.pathname += url.pathname.endsWith("/") ? "index.html.enc" : ".enc";
+
+  url.pathname = `/${(
+    await encrypt(
+      url.pathname.slice(1) + (url.pathname.endsWith("/") ? "index.html" : ""),
+      hashedPassword,
+      true,
+    )
+  ).toHex()}.swcrypts.enc`;
 
   // Cannot reuse the original request as it has mode: "navigate" and navigation
   // requests cannot be constructed via JS (only by the browser). Either way, we

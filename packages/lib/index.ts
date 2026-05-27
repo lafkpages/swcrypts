@@ -2,8 +2,18 @@ export const serviceWorkerFileName = "__swcrypts_sw.js";
 
 const encoder = new TextEncoder();
 
-export async function encrypt(data: BufferSource, hashedPassword: string) {
-  const iv = crypto.getRandomValues(new Uint8Array(12));
+export async function encrypt(
+  data: BufferSource,
+  hashedPassword: string,
+  deterministic = false,
+) {
+  if (typeof data === "string") {
+    data = encoder.encode(data);
+  }
+
+  const iv = deterministic
+    ? new Uint8Array((await crypto.subtle.digest("SHA-256", data)).slice(0, 12))
+    : crypto.getRandomValues(new Uint8Array(12));
 
   const ciphertext = new Uint8Array(
     await crypto.subtle.encrypt(
