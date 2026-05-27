@@ -1,7 +1,5 @@
-import { bytesToHexString } from "./hex";
-
 export function generateRandomSalt() {
-  return bytesToHexString(crypto.getRandomValues(new Uint8Array(16)));
+  return crypto.getRandomValues(new Uint8Array(16)).toHex();
 }
 
 export function isValidSalt(salt: string) {

@@ -17,10 +17,6 @@
       "types": "./dist/files.d.ts",
       "default": "./dist/files.js"
     },
-    "./hex": {
-      "types": "./dist/hex.d.ts",
-      "default": "./dist/hex.js"
-    },
     "./salt": {
       "types": "./dist/salt.d.ts",
       "default": "./dist/salt.js"

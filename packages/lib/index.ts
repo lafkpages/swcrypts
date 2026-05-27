@@ -1,5 +1,3 @@
-import { bytesToHexString, hexStringToBytes } from "./hex";
-
 export const serviceWorkerFileName = "__swcrypts_sw.js";
 
 const encoder = new TextEncoder();
@@ -15,7 +13,7 @@ export async function encrypt(data: BufferSource, hashedPassword: string) {
       },
       await crypto.subtle.importKey(
         "raw",
-        hexStringToBytes(hashedPassword),
+        Uint8Array.fromHex(hashedPassword),
         "AES-GCM",
         false,
         ["encrypt"],
@@ -41,7 +39,7 @@ export async function decrypt(
     },
     await crypto.subtle.importKey(
       "raw",
-      hexStringToBytes(hashedPassword),
+      Uint8Array.fromHex(hashedPassword),
       "AES-GCM",
       false,
       ["decrypt"],
@@ -51,24 +49,22 @@ export async function decrypt(
 }
 
 export async function hashPassword(password: string, salt: string) {
-  return bytesToHexString(
-    new Uint8Array(
-      await crypto.subtle.deriveBits(
-        {
-          name: "PBKDF2",
-          hash: "SHA-256",
-          iterations: 600_000,
-          salt: encoder.encode(salt),
-        },
-        await crypto.subtle.importKey(
-          "raw",
-          encoder.encode(password),
-          "PBKDF2",
-          false,
-          ["deriveBits"],
-        ),
-        256,
+  return new Uint8Array(
+    await crypto.subtle.deriveBits(
+      {
+        name: "PBKDF2",
+        hash: "SHA-256",
+        iterations: 600_000,
+        salt: encoder.encode(salt),
+      },
+      await crypto.subtle.importKey(
+        "raw",
+        encoder.encode(password),
+        "PBKDF2",
+        false,
+        ["deriveBits"],
       ),
+      256,
     ),
-  );
+  ).toHex();
 }
