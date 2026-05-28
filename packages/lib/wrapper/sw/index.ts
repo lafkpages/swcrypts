@@ -18,20 +18,22 @@ self.addEventListener("install", (e) => {
 });
 
 self.addEventListener("fetch", (e) => {
-  console.debug(
-    "SwCrypts service worker intercepting fetch for",
-    e.request.url,
-    e.request,
-  );
-
   const url = new URL(e.request.url);
 
-  if (assets.includes(url.pathname)) {
-    e.respondWith(fetchAsset(url, e.request));
-    return;
-  } else if (e.request.mode === "navigate") {
-    e.respondWith(fetchEntryPoint(url, e.request));
-    return;
+  if (url.origin === location.origin) {
+    console.debug(
+      "SwCrypts service worker intercepting fetch for",
+      e.request.url,
+      e.request,
+    );
+
+    if (assets.includes(url.pathname)) {
+      e.respondWith(fetchAsset(url, e.request));
+      return;
+    } else if (e.request.mode === "navigate") {
+      e.respondWith(fetchEntryPoint(url, e.request));
+      return;
+    }
   }
 
   e.respondWith(
@@ -183,6 +185,10 @@ async function fetchAndDecrypt(
 }
 
 function cloneResponseInjectHeaders(resp: Response, swCryptsType: string) {
+  if (resp.type === "opaque") {
+    return resp;
+  }
+
   const headers = new Headers(resp.headers);
   headers.set(swCryptsTypeHeader, swCryptsType);
   return new Response(resp.body, {
