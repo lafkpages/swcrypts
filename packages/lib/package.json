@@ -30,7 +30,7 @@
     "@types/bun": "catalog:",
     "@types/mime-types": "^3.0.1",
     "dts-bundle-generator": "^9.5.1",
-    "htmlnano": "^3.3.1",
+    "htmlnano": "^3.3.2",
     "mime-types": "^3.0.2"
   },
   "scripts": {
