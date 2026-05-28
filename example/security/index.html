@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Security · SwCrypts</title>
+    <link rel="stylesheet" href="/style.css" />
+  </head>
+  <body>
+    <header class="site-header">
+      <div class="container">
+        <a href="/" class="logo">SwCrypts</a>
+        <button
+          class="menu-toggle"
+          aria-label="Toggle menu"
+          aria-expanded="false"
+        >
+          ☰
+        </button>
+        <nav class="site-nav">
+          <a href="/">Home</a>
+          <a href="/features/">Features</a>
+          <a href="/security/">Security</a>
+          <a href="/status/">Status</a>
+        </nav>
+      </div>
+    </header>
+
+    <main class="container">
+      <h1>Security</h1>
+      <p class="lead">
+        SwCrypts uses modern, battle-tested cryptography. Here is exactly how it
+        works.
+      </p>
+
+      <section>
+        <h2>Cryptography</h2>
+        <ul>
+          <li><strong>Cipher:</strong> AES-256-GCM</li>
+          <li>
+            <strong>Key derivation:</strong> PBKDF2-HMAC-SHA256 with 600,000
+            iterations
+          </li>
+          <li>
+            <strong>Salt:</strong> 16-byte random, persisted across rebuilds so
+            returning visitors are not prompted again
+          </li>
+        </ul>
+      </section>
+
+      <section>
+        <h2>Post-quantum safety</h2>
+        <p>
+          SwCrypts uses only symmetric primitives. There is no RSA, ECDH, or
+          other public-key crypto for Shor's algorithm to break. Grover's
+          algorithm halves the effective security level:
+        </p>
+        <ul>
+          <li>AES-256 → ~128-bit post-quantum security</li>
+          <li>SHA-256 → ~128-bit post-quantum preimage resistance</li>
+        </ul>
+        <p>
+          To preserve the full margin, your password must carry at least ~128
+          bits of entropy after accounting for Grover's speedup.
+        </p>
+      </section>
+
+      <section>
+        <h2>Password recommendations</h2>
+        <table>
+          <thead>
+            <tr>
+              <th>Scheme</th>
+              <th>Length</th>
+              <th>Classical entropy</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Random alphanumeric (a–z, A–Z, 0–9)</td>
+              <td>≥ 43 chars</td>
+              <td>~256 bits</td>
+            </tr>
+            <tr>
+              <td>Random alphanumeric + symbols</td>
+              <td>≥ 39 chars</td>
+              <td>~256 bits</td>
+            </tr>
+            <tr>
+              <td>Diceware passphrase (EFF long list)</td>
+              <td>≥ 20 words</td>
+              <td>~259 bits</td>
+            </tr>
+          </tbody>
+        </table>
+        <p>
+          Post-quantum, Grover's algorithm halves these values to ~128 bits.
+        </p>
+      </section>
+    </main>
+
+    <footer class="site-footer">
+      <div class="container">
+        <p>
+          Encrypted with
+          <a href="https://github.com/lafkpages/swcrypts" target="_blank"
+            >SwCrypts</a
+          >.
+        </p>
+      </div>
+    </footer>
+
+    <script src="/main.js"></script>
+  </body>
+</html>

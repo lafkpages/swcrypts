@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Status · SwCrypts</title>
+    <link rel="stylesheet" href="/style.css" />
+  </head>
+  <body>
+    <header class="site-header">
+      <div class="container">
+        <a href="/" class="logo">SwCrypts</a>
+        <button
+          class="menu-toggle"
+          aria-label="Toggle menu"
+          aria-expanded="false"
+        >
+          ☰
+        </button>
+        <nav class="site-nav">
+          <a href="/">Home</a>
+          <a href="/features/">Features</a>
+          <a href="/security/">Security</a>
+          <a href="/status/">Status</a>
+        </nav>
+      </div>
+    </header>
+
+    <main class="container">
+      <h1>Project status</h1>
+      <p class="lead">
+        SwCrypts is experimental software. Here is what to expect.
+      </p>
+
+      <section class="notice">
+        <h2>Early development</h2>
+        <p>
+          This project is in its infancy. APIs, CLI flags, configuration
+          formats, and encryption details are all subject to breaking changes
+          without warning. Do not use SwCrypts for production data without
+          understanding the risks.
+        </p>
+      </section>
+
+      <section>
+        <h2>Feedback welcome</h2>
+        <p>
+          Found a bug? Have an idea? The project lives on
+          <a href="https://github.com/lafkpages/swcrypts" target="_blank"
+            >GitHub</a
+          >. Open an issue or pull request — all constructive feedback is
+          appreciated.
+        </p>
+      </section>
+
+      <section>
+        <h2>Roadmap</h2>
+        <ul>
+          <li>✅ AES-256-GCM encryption with PBKDF2 key derivation</li>
+          <li>✅ Service Worker runtime decryption</li>
+          <li>✅ Multi-page and subdirectory support</li>
+          <li>🚧 CLI package distribution</li>
+          <li>🚧 Custom wrapper themes</li>
+          <li>🚧 Tests (we know, we know)</li>
+        </ul>
+      </section>
+    </main>
+
+    <footer class="site-footer">
+      <div class="container">
+        <p><a href="/">← Back home</a></p>
+      </div>
+    </footer>
+
+    <script src="/main.js"></script>
+  </body>
+</html>

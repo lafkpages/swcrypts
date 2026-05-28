@@ -3,12 +3,118 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Example site</title>
+    <title>SwCrypts · Encrypted Static Sites</title>
+    <link rel="stylesheet" href="/style.css" />
   </head>
   <body>
-    <h1>Hello!</h1>
-    <p>This is a demo for SwCrypts. This is encrypted!</p>
-    <a href="/subdir/">Go to subdir</a>
-    <img src="bug.svg" />
+    <header class="site-header">
+      <div class="container">
+        <a href="/" class="logo">SwCrypts</a>
+        <button
+          class="menu-toggle"
+          aria-label="Toggle menu"
+          aria-expanded="false"
+        >
+          ☰
+        </button>
+        <nav class="site-nav">
+          <a href="/">Home</a>
+          <a href="/features/">Features</a>
+          <a href="/security/">Security</a>
+          <a href="/status/">Status</a>
+        </nav>
+      </div>
+    </header>
+
+    <main>
+      <section class="hero">
+        <div class="container">
+          <h1>Private docs.<br />Public hosting.</h1>
+          <p class="lead">
+            Encrypt any static site and serve it from a CDN. No backend, no
+            server-side logic, no trust required.
+          </p>
+          <div class="hero-cta">
+            <a
+              href="https://github.com/lafkpages/swcrypts"
+              class="btn btn-primary"
+              target="_blank"
+              >View on GitHub</a
+            >
+            <a href="/features/" class="btn btn-secondary">How it works</a>
+          </div>
+        </div>
+      </section>
+
+      <section class="container">
+        <div class="notice">
+          <p>
+            <strong>Early development:</strong> SwCrypts is pre-1.0. Expect
+            breaking changes, missing features, and rough edges.
+            <a href="/status/">See status →</a>
+          </p>
+        </div>
+      </section>
+
+      <section class="container">
+        <h2>Why SwCrypts?</h2>
+        <div class="grid">
+          <article class="card">
+            <h3>AES-256-GCM</h3>
+            <p>
+              Content is encrypted with AES-256-GCM. Keys are derived via
+              PBKDF2-HMAC-SHA256 with 600k iterations and a random salt.
+            </p>
+          </article>
+          <article class="card">
+            <h3>Zero-config hosting</h3>
+            <p>
+              Drop the encrypted output on any static host — GitHub Pages,
+              Cloudflare Pages, Vercel, S3. It just works.
+            </p>
+          </article>
+          <article class="card">
+            <h3>Service Worker interception</h3>
+            <p>
+              A lightweight Service Worker decrypts assets on the fly inside the
+              browser. URLs and content stay hidden until the password is
+              entered.
+            </p>
+          </article>
+          <article class="card">
+            <h3>Post-quantum safe</h3>
+            <p>
+              Only symmetric primitives — no RSA or ECDH to break. AES-256 still
+              gives ~128 bits of post-quantum security.
+            </p>
+          </article>
+        </div>
+      </section>
+
+      <section class="container">
+        <h2>Quick start</h2>
+        <div class="code-block">
+          <pre><code># Temporary command while the CLI is not yet published
+bun run --cwd packages/cli . build -i public -o public-encrypted
+
+# Once published, this will just be:
+# swcrypts build -i public -o public-encrypted</code></pre>
+          <button class="copy-btn" aria-label="Copy to clipboard">Copy</button>
+        </div>
+      </section>
+    </main>
+
+    <footer class="site-footer">
+      <div class="container">
+        <p>
+          Encrypted with
+          <a href="https://github.com/lafkpages/swcrypts" target="_blank"
+            >SwCrypts</a
+          >. Password was <code>Hi</code> — but do not use that in production.
+        </p>
+      </div>
+    </footer>
+
+    <script src="/main.js"></script>
   </body>
 </html>

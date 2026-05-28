@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Features · SwCrypts</title>
+    <link rel="stylesheet" href="/style.css" />
+  </head>
+  <body>
+    <header class="site-header">
+      <div class="container">
+        <a href="/" class="logo">SwCrypts</a>
+        <button
+          class="menu-toggle"
+          aria-label="Toggle menu"
+          aria-expanded="false"
+        >
+          ☰
+        </button>
+        <nav class="site-nav">
+          <a href="/">Home</a>
+          <a href="/features/">Features</a>
+          <a href="/security/">Security</a>
+          <a href="/status/">Status</a>
+        </nav>
+      </div>
+    </header>
+
+    <main class="container">
+      <h1>Features</h1>
+      <p class="lead">
+        Everything you need to ship encrypted static sites without touching a
+        server.
+      </p>
+
+      <section class="feature-list">
+        <div class="feature-item">
+          <h2>Encrypt any static asset</h2>
+          <p>
+            HTML, CSS, JavaScript, images, fonts, JSON — if it is a file,
+            SwCrypts can encrypt it. The wrapper page prompts for a password,
+            and a Service Worker intercepts subsequent requests to transparently
+            decrypt content.
+          </p>
+        </div>
+        <div class="feature-item">
+          <h2>URL privacy</h2>
+          <p>
+            Paths and filenames are hashed in the encrypted output. Visitors
+            cannot glean information from URLs alone — everything is opaque
+            ciphertext until decrypted.
+          </p>
+        </div>
+        <div class="feature-item">
+          <h2>Customizable wrapper</h2>
+          <p>
+            Override the password prompt title, message, and CSS via the wrapper
+            API. Match your brand or keep it minimal.
+          </p>
+        </div>
+        <div class="feature-item">
+          <h2>Single command</h2>
+          <p>
+            One CLI invocation turns your <code>public/</code> directory into a
+            ready-to-deploy encrypted site. No build pipeline plugins, no
+            framework lock-in.
+          </p>
+        </div>
+      </section>
+    </main>
+
+    <footer class="site-footer">
+      <div class="container">
+        <p>
+          Encrypted with
+          <a href="https://github.com/lafkpages/swcrypts" target="_blank"
+            >SwCrypts</a
+          >.
+        </p>
+      </div>
+    </footer>
+
+    <script src="/main.js"></script>
+  </body>
+</html>
