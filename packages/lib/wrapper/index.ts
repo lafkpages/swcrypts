@@ -1,6 +1,11 @@
 /// <reference lib="dom" />
 
 import { decrypt, hashPassword, serviceWorkerFileName } from "..";
+import {
+  getPasswordFromCache,
+  removeCache,
+  savePasswordInCache,
+} from "./cache";
 
 let failed = false;
 
@@ -11,7 +16,6 @@ if (location.protocol !== "https:" && location.hostname !== "localhost") {
   failed = true;
 }
 
-const hashedPasswordKey = "__swcrypts_hashed_password";
 const cryptoCheck = Uint8Array.fromBase64("{{CRYPTOCHECK}}");
 const cryptoCheckExpectedLength = 64;
 
@@ -20,7 +24,7 @@ if (failed) {
 } else {
   await registerServiceWorker();
 
-  const storedHashedPassword = localStorage.getItem(hashedPasswordKey);
+  const storedHashedPassword = await getPasswordFromCache();
 
   if (storedHashedPassword) {
     let decryptedCheck: ArrayBuffer | null = null;
@@ -29,11 +33,10 @@ if (failed) {
       decryptedCheck = await decrypt(cryptoCheck, storedHashedPassword);
     } catch (err) {
       console.error("Decryption failed with stored hashed password:", err);
-      localStorage.removeItem(hashedPasswordKey);
+      await removeCache();
     }
 
     if (decryptedCheck?.byteLength === cryptoCheckExpectedLength) {
-      await sendHashedPassword(storedHashedPassword);
       location.reload();
     } else {
       setupUi();
@@ -45,13 +48,13 @@ if (failed) {
 
 async function setupUi() {
   if (document.readyState === "complete") {
-    onDocumentLoad();
+    setupUiOnDocumentLoad();
   } else {
-    document.addEventListener("DOMContentLoaded", onDocumentLoad);
+    document.addEventListener("DOMContentLoaded", setupUiOnDocumentLoad);
   }
 }
 
-function onDocumentLoad() {
+function setupUiOnDocumentLoad() {
   const form = document.querySelector("main form")!;
   const input = form.querySelector<HTMLInputElement>("input[type=password]")!;
   const button = form.querySelector("button")!;
@@ -89,8 +92,7 @@ function onDocumentLoad() {
     }
 
     if (decryptedCheck?.byteLength === cryptoCheckExpectedLength) {
-      localStorage.setItem(hashedPasswordKey, hashedPassword);
-      await sendHashedPassword(hashedPassword);
+      await savePasswordInCache(hashedPassword);
       location.reload();
     }
   });
@@ -115,20 +117,5 @@ async function registerServiceWorker() {
       "Service workers are not supported in this browser. Please use a modern browser that supports service workers to access this page.",
     );
     failed = true;
-  }
-}
-
-async function sendHashedPassword(hashedPassword: string) {
-  const registration = await navigator.serviceWorker.ready;
-
-  if (registration.active) {
-    registration.active.postMessage({
-      type: "swcrypts:setHashedPassword",
-      hashedPassword,
-    });
-  } else {
-    console.error(
-      "No active service worker found to send the hashed password to.",
-    );
   }
 }

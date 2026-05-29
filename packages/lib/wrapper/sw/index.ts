@@ -4,6 +4,7 @@
 import { contentType } from "mime-types";
 
 import { decrypt, encrypt, serviceWorkerFileName } from "../..";
+import { getPasswordFromCache } from "../cache";
 import { patchCspForInlineScript } from "./csp";
 
 declare const self: ServiceWorkerGlobalScope;
@@ -41,26 +42,15 @@ self.addEventListener("fetch", (e) => {
   );
 });
 
-self.addEventListener("message", (e) => {
-  const data = e.data as unknown;
-
-  if (
-    data &&
-    typeof data === "object" &&
-    "type" in data &&
-    data.type === "swcrypts:setHashedPassword" &&
-    "hashedPassword" in data &&
-    typeof data.hashedPassword === "string"
-  ) {
-    hashedPassword = data.hashedPassword;
-  }
-});
-
 async function fetchAsset(url: URL, request: Request) {
   console.debug(
     "SwCrypts service worker intercepting fetch for asset",
     url.pathname,
   );
+
+  if (!hashedPassword) {
+    hashedPassword = await getPasswordFromCache();
+  }
 
   if (!hashedPassword) {
     return new Response("Unauthorized SwCrypts", {
@@ -100,6 +90,10 @@ async function fetchEntryPoint(url: URL, request: Request) {
   );
 
   if (!hashedPassword) {
+    hashedPassword = await getPasswordFromCache();
+  }
+
+  if (!hashedPassword) {
     return cloneResponseInjectHeaders(
       await fetch(request),
       "entrypoint; unauthed",
@@ -129,7 +123,7 @@ async function fetchEntryPoint(url: URL, request: Request) {
   }
 
   return new Response(
-    `${decodedPage}<script${nonceAttr}>navigator.serviceWorker.register("/${serviceWorkerFileName}",{scope:"/"});navigator.serviceWorker.ready.then(r=>{r.active.postMessage(localStorage.getItem("__swcrypts_hashed_password"))})</script>`,
+    `${decodedPage}<script${nonceAttr}>navigator.serviceWorker.register("/${serviceWorkerFileName}",{scope:"/"})</script>`,
     {
       status: resp.status,
       statusText: resp.statusText,
