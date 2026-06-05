@@ -7,6 +7,7 @@
     "<TYPES>",
     "<TYPES>^[.]",
     "",
+    "^bun:?$",
     "<BUILTIN_MODULES>",
     "",
     "<THIRD_PARTY_MODULES>",
