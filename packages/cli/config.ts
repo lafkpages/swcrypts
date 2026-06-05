@@ -24,7 +24,7 @@ async function findConfigFile(indir?: string) {
   }
 
   for (const file of files) {
-    if (/(?:^|\/)\.swcrypts.json[c5]?$/.test(file)) {
+    if (/(?:^|\/)\.swcrypts\.json[c5]?$/.test(file)) {
       if (configFile) {
         console.error(
           "Multiple config files found. Please ensure only one SwCrypts config file is present (.swcrypts.json, .swcrypts.json5, or .swcrypts.jsonc).",
