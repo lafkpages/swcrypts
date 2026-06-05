@@ -1,0 +1,22 @@
+{
+  "$ref": "#/definitions/SwCryptsConfig",
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "definitions": {
+    "SwCryptsConfig": {
+      "additionalProperties": false,
+      "properties": {
+        "customStyles": {
+          "description": "Path to a CSS file to override the default styling of SwCrypts' password prompt page. Note that the contents of this file are **NOT sanitised** and are injected directly into the wrapper HTML.",
+          "type": "string"
+        },
+        "password": {
+          "type": "string"
+        },
+        "salt": {
+          "type": "string"
+        }
+      },
+      "type": "object"
+    }
+  }
+}

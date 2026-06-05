@@ -9,6 +9,10 @@ export interface SwCryptsConfig {
   salt?: string;
 
   /**
+   * Path to a CSS file to override the default styling of SwCrypts' password
+   * prompt page. Note that the contents of this file are **NOT sanitised**
+   * and are injected directly into the wrapper HTML.
+   *
    * @see {@link WrapperOptions["customStyles"]}
    */
   customStyles?: string;

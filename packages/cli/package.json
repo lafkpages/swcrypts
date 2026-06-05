@@ -7,7 +7,8 @@
   "private": true,
   "devDependencies": {
     "@types/bun": "catalog:",
-    "bunli": "^0.9.1"
+    "bunli": "^0.9.1",
+    "ts-json-schema-generator": "^2.9.0"
   },
   "dependencies": {
     "@bunli/core": "^0.9.1",
@@ -15,6 +16,6 @@
     "zod": "^4.4.3"
   },
   "scripts": {
-    "build": "bunli build"
+    "build": "ts-json-schema-generator --path config.ts --type SwCryptsConfig --jsDoc extended --no-type-check -o config.schema.json && bunli build"
   }
 }
