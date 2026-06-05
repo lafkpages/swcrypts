@@ -5,6 +5,8 @@ import { readdir } from "node:fs/promises";
 import { join } from "node:path";
 
 export interface SwCryptsConfig {
+  $schema?: string;
+
   password?: string;
   salt?: string;
 

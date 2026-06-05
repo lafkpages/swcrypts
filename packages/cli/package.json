@@ -16,6 +16,7 @@
     "zod": "^4.4.3"
   },
   "scripts": {
-    "build": "ts-json-schema-generator --path config.ts --type SwCryptsConfig --jsDoc extended --no-type-check -o config.schema.json && bunli build"
+    "build": "bun run build:schema && bunli build",
+    "build:schema": "ts-json-schema-generator --path config.ts --type SwCryptsConfig --jsDoc extended --no-type-check -o config.schema.json && prettier --write config.schema.json"
   }
 }
