@@ -38,10 +38,6 @@ export default defineCommand({
         "Password for encryption. Be careful with this option as it may expose your password in command history.",
     }),
     salt: option(z.string().optional(), { short: "s" }),
-    customStyles: option(z.string().optional(), {
-      description:
-        "Path to a CSS file to override the default styling of SwCrypts' password prompt page. Note that this is NOT sanitised and XSS is possible.",
-    }),
   },
   handler: async ({ flags, prompt }) => {
     const [config, configPath] = await loadConfig(flags.config, flags.indir);
@@ -105,10 +101,9 @@ export default defineCommand({
     const cryptoCheck = await generateCryptoCheck(hashedPassword);
 
     const customStylesPath =
-      flags.customStyles ||
-      (config.customStyles && configPath
+      config.customStyles && configPath
         ? resolve(configPath, "..", config.customStyles)
-        : null);
+        : null;
     const customStyles = customStylesPath
       ? await Bun.file(customStylesPath).text()
       : null;
@@ -116,6 +111,7 @@ export default defineCommand({
     await rm(flags.outdir, { recursive: true, force: true });
 
     const wrapperHtml = getWrapperHtml({
+      ...config, // careful if new fields are added
       cryptoCheck,
       salt,
       customStyles,

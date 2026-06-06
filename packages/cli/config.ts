@@ -4,7 +4,10 @@ import { JSON5, JSONC } from "bun";
 import { readdir } from "node:fs/promises";
 import { join } from "node:path";
 
-export interface SwCryptsConfig {
+export interface SwCryptsConfig extends Omit<
+  WrapperOptions,
+  "cryptoCheck" | "salt"
+> {
   $schema?: string;
 
   password?: string;
@@ -14,8 +17,6 @@ export interface SwCryptsConfig {
    * Path to a CSS file to override the default styling of SwCrypts' password
    * prompt page. Note that the contents of this file are **NOT sanitised**
    * and are injected directly into the wrapper HTML.
-   *
-   * @see {@link WrapperOptions["customStyles"]}
    */
   customStyles?: string;
 }

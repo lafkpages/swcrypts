@@ -12,10 +12,25 @@
           "description": "Path to a CSS file to override the default styling of SwCrypts' password prompt page. Note that the contents of this file are **NOT sanitised** and are injected directly into the wrapper HTML.",
           "type": "string"
         },
+        "includeAttribution": {
+          "default": true,
+          "description": "Whether to show the \"Powered by SwCrypts\" attribution link in the password prompt page.",
+          "type": "boolean"
+        },
+        "message": {
+          "default": "Please enter the password to view the content.",
+          "description": "The message shown in the wrapper page. Note that this is **NOT sanitised or escaped**.",
+          "type": "string"
+        },
         "password": {
           "type": "string"
         },
         "salt": {
+          "type": "string"
+        },
+        "title": {
+          "default": "This page is encrypted!",
+          "description": "The title shown in the wrapper page. Note that this is **NOT sanitised or escaped**.",
           "type": "string"
         }
       },
