@@ -17,6 +17,9 @@ export interface SwCryptsConfig extends Omit<
    * Path to a CSS file to override the default styling of SwCrypts' password
    * prompt page. Note that the contents of this file are **NOT sanitised**
    * and are injected directly into the wrapper HTML.
+   *
+   * To see what can be styled, refer to the [wrapper HTML template](
+   * https://github.com/lafkpages/swcrypts/blob/main/packages/lib/wrapper/index.html).
    */
   customStyles?: string;
 }
