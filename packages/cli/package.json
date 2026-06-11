@@ -17,6 +17,7 @@
   },
   "scripts": {
     "build": "bun run build:schema && bunli build",
-    "build:schema": "ts-json-schema-generator --path config.ts --type SwCryptsConfig --jsDoc extended --no-type-check -o config.schema.json && prettier --write config.schema.json"
+    "build:schema": "ts-json-schema-generator --path config.ts --type SwCryptsConfig --jsDoc extended --no-type-check -o config.schema.json && prettier --write config.schema.json",
+    "test": "bun test"
   }
 }

@@ -13,6 +13,7 @@
     "prettier": "^3.8.3"
   },
   "scripts": {
-    "format": "prettier --write ."
+    "format": "prettier --write .",
+    "test": "bun test --cwd packages/lib && bun test --cwd packages/cli"
   }
 }

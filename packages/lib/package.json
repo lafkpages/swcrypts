@@ -34,6 +34,7 @@
     "mime-types": "^3.0.2"
   },
   "scripts": {
-    "build": "bun run ./scripts/build.ts"
+    "build": "bun run ./scripts/build.ts",
+    "test": "bun test"
   }
 }
