@@ -117,8 +117,6 @@ export default defineCommand({
       customStyles,
     });
 
-    const assets: string[] = [];
-
     for (const relativeFilePath of files) {
       if (relativeFilePath === serviceWorkerFileName) {
         console.warn(
@@ -143,8 +141,6 @@ export default defineCommand({
 
       if (isEntryPoint) {
         await Bun.write(outputFilePath, wrapperHtml);
-      } else {
-        assets.push("/" + relativeFilePath);
       }
 
       await Bun.write(outputFilePathEnc, encryptedData);
@@ -152,7 +148,7 @@ export default defineCommand({
 
     await Bun.write(
       join(flags.outdir, serviceWorkerFileName),
-      getServiceWorkerJs(assets),
+      getServiceWorkerJs(),
     );
   },
 });

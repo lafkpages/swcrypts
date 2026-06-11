@@ -11,7 +11,6 @@ declare const self: ServiceWorkerGlobalScope;
 
 const swCryptsTypeHeader = "X-SwCrypts-Type";
 
-const assets = ["{{ASSETS}}"];
 let hashedPassword: string | null = null;
 
 self.addEventListener("install", (e) => {
@@ -28,11 +27,11 @@ self.addEventListener("fetch", (e) => {
       e.request,
     );
 
-    if (assets.includes(url.pathname)) {
-      e.respondWith(fetchAsset(url, e.request));
-      return;
-    } else if (e.request.mode === "navigate") {
+    if (e.request.mode === "navigate") {
       e.respondWith(fetchEntryPoint(url, e.request));
+      return;
+    } else if (!url.pathname.endsWith(`/${serviceWorkerFileName}`)) {
+      e.respondWith(fetchAsset(url, e.request));
       return;
     }
   }

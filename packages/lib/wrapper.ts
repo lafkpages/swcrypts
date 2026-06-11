@@ -71,8 +71,8 @@ export function getWrapperHtml(options: WrapperOptions) {
   return html;
 }
 
-export function getServiceWorkerJs(assets: string[]) {
-  return swJs.replace('["{{ASSETS}}"]', JSON.stringify(assets));
+export function getServiceWorkerJs() {
+  return swJs;
 }
 
 export async function generateCryptoCheck(hashedPassword: string) {
