@@ -35,5 +35,8 @@ jobs:
       - name: Run lib tests
         run: bun test --cwd packages/lib
 
+      - name: Build CLI
+        run: bun run --cwd packages/cli build
+
       - name: Run CLI tests
         run: bun test --cwd packages/cli

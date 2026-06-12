@@ -50,6 +50,10 @@ describe("build command", () => {
       cwd: join(import.meta.dir, ".."),
     });
 
+    if (result.exitCode !== 0) {
+      console.error("CLI stderr:", result.stderr.toString());
+    }
+
     expect(result.exitCode).toBe(0);
 
     // Entry point should be the wrapper HTML, not the original content
