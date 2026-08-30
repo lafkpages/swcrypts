@@ -3,7 +3,7 @@ export const serviceWorkerFileName = "__swcrypts_sw.js";
 const encoder = new TextEncoder();
 
 export async function encrypt(
-  data: BufferSource,
+  data: string | BufferSource,
   hashedPassword: string,
   deterministic = false,
 ) {
