@@ -1,17 +1,20 @@
-/// <reference types="bun" />
-
-import { $, build, write } from "bun";
+import { $, build, JSON5, write } from "bun";
 import { rm } from "node:fs/promises";
 import { argv } from "node:process";
 
 import { process } from "htmlnano";
 
+import { exports } from "../package.json";
+
+// Start clean
 await rm("dist", { recursive: true, force: true });
+await rm("dist-wrapper", { recursive: true, force: true });
 
 await $`ln -f ../../README.md`;
 
+// Build the wrapper page
 const wrapperHtmlBuild = await build({
-  entrypoints: ["./wrapper/index.html"],
+  entrypoints: ["./src/wrapper/index.html"],
   compile: true,
   target: "browser",
   minify: true,
@@ -20,6 +23,7 @@ const wrapperHtmlBuild = await build({
   },
 });
 
+// Minify the wrapper page's HTML and write it out
 const wrapperHtmlMinified = await process(
   await wrapperHtmlBuild.outputs[0]!.text(),
   {
@@ -32,23 +36,26 @@ const wrapperHtmlMinified = await process(
     minifySvg: false,
   },
 );
-await write("./wrapper-dist/index.html", wrapperHtmlMinified.html);
+await write(
+  "./dist-wrapper/html.ts",
+  `export default ${JSON5.stringify(wrapperHtmlMinified.html)};`,
+);
 
-await build({
-  entrypoints: ["./wrapper/sw/index.ts"],
+// Build the service worker and write it out
+const swBuild = await build({
+  entrypoints: ["./src/wrapper/sw/index.ts"],
   target: "browser",
   minify: true,
-  outdir: "wrapper-dist",
 });
+await write(
+  "./dist-wrapper/sw.ts",
+  `export default ${JSON5.stringify(await swBuild.outputs[0]!.text())};`,
+);
 
-const libExports = [
-  "index.ts",
-  "files.ts",
-  "metadata.ts",
-  "salt.ts",
-  "wrapper.ts",
-];
-
+// Build the library and write it out
+const libExports = Object.keys(exports).map((s) =>
+  s === "." ? "src/index.ts" : `src/${s.slice(2)}.ts`,
+);
 await build({
   entrypoints: libExports,
   target: "browser",
@@ -57,12 +64,16 @@ await build({
   format: "esm",
 });
 
+// Check if types should be generated or not
 const skipTypes = argv.includes("--skip-types");
 
 if (!skipTypes) {
   // Generate bundled type declarations for each entry point
   for (const entry of libExports) {
-    const outFile = entry.replace(".ts", ".d.ts");
-    await $`bun run -b dts-bundle-generator --no-check -o dist/${outFile} ${entry}`.quiet();
+    await $`bun run -b tsc --ignoreConfig --lib esnext,dom --module preserve --declaration --emitDeclarationOnly ${entry} --outDir dist`.quiet();
   }
+
+  // Remove unneeded types (TODO: how do we avoid generating them in the first place?)
+  await rm("dist/src", { recursive: true, force: true });
+  await rm("dist/dist-wrapper", { recursive: true, force: true });
 }

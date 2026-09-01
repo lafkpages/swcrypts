@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 
-import { fileIsEntryPoint, filterIgnoredFiles } from "../files";
+import { fileIsEntryPoint, filterIgnoredFiles } from "../src/files";
 
 describe("filterIgnoredFiles", () => {
   test("preserves normal static assets", () => {

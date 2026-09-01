@@ -1,11 +1,6 @@
 import { describe, expect, test } from "bun:test";
 
-import {
-  decrypt,
-  encrypt,
-  hashPassword,
-  serviceWorkerFileName,
-} from "../index";
+import { decrypt, encrypt, hashPassword } from "../src";
 
 describe("hashPassword", () => {
   test("is deterministic for the same password and salt", async () => {
@@ -64,7 +59,6 @@ describe("encrypt", () => {
 
   test("accepts string input by encoding it", async () => {
     const key = await hashPassword("pw", "s".repeat(32));
-    // @ts-expect-error — runtime accepts strings even if the type says BufferSource
     const encrypted = await encrypt("string input", key);
     expect(encrypted.length).toBeGreaterThan(12);
   });

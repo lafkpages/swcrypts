@@ -4,9 +4,9 @@ node_modules
 # output
 out
 dist
+dist-*
 *.tgz
 /example-enc
-/packages/lib/wrapper-dist
 /packages/lib/README.md
 
 # code coverage

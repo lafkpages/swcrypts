@@ -32,7 +32,6 @@
   },
   "devDependencies": {
     "@types/bun": "catalog:",
-    "dts-bundle-generator": "^9.5.1",
     "htmlnano": "^3.4.0",
     "valibot": "^1.4.2"
   },

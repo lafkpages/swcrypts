@@ -1,9 +1,6 @@
 import { encrypt } from ".";
-import _wrapper from "./wrapper-dist/index.html" with { type: "text" };
-import _swJs from "./wrapper-dist/index.js" with { type: "text" };
-
-const wrapperHtml = _wrapper as unknown as string;
-const swJs = _swJs as unknown as string;
+import wrapperHtml from "../dist-wrapper/html";
+import swJs from "../dist-wrapper/sw";
 
 export interface WrapperOptions {
   cryptoCheck: Uint8Array;
@@ -53,12 +50,12 @@ export function getWrapperHtml(options: WrapperOptions) {
 
   let html = wrapperHtml
     .replace(
-      '"{{CRYPTOCHECK}}"',
+      /"{{CRYPTOCHECK}}"/g,
       JSON.stringify(resolvedOptions.cryptoCheck.toBase64()),
     )
-    .replace('"{{SALT}}"', JSON.stringify(resolvedOptions.salt))
-    .replaceAll("{{TITLE}}", resolvedOptions.title)
-    .replace("{{MESSAGE}}", resolvedOptions.message);
+    .replace(/"{{SALT}}"/g, JSON.stringify(resolvedOptions.salt))
+    .replace(/{{TITLE}}/g, resolvedOptions.title)
+    .replace(/{{MESSAGE}}/g, resolvedOptions.message);
 
   if (resolvedOptions.customStyles) {
     html = html.replace("</style>", `${resolvedOptions.customStyles}</style>`);
