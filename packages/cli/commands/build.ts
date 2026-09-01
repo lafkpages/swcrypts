@@ -1,3 +1,5 @@
+import type { FileMetadata } from "@swcrypts/core/metadata";
+
 import { readdir, rm } from "node:fs/promises";
 import { join, relative, resolve } from "node:path";
 
@@ -117,6 +119,8 @@ export default defineCommand({
       customStyles,
     });
 
+    const encoder = new TextEncoder();
+
     for (const relativeFilePath of files) {
       if (relativeFilePath === serviceWorkerFileName) {
         console.warn(
@@ -127,11 +131,24 @@ export default defineCommand({
 
       const filePath = join(flags.indir, relativeFilePath);
       const file = Bun.file(filePath);
+
       const data = await file.bytes();
+      const metadata = encoder.encode(
+        JSON.stringify({ mimeType: file.type } satisfies FileMetadata),
+      );
+
+      const payload = new DataView(
+        new ArrayBuffer(5 + metadata.length + data.length),
+      );
+      payload.setUint8(0, 1);
+      payload.setUint32(1, metadata.length);
+      const payloadBytes = new Uint8Array(payload.buffer);
+      payloadBytes.set(metadata, 5);
+      payloadBytes.set(data, 5 + metadata.length);
 
       const isEntryPoint = fileIsEntryPoint(relativeFilePath);
 
-      const encryptedData = await encrypt(data, hashedPassword);
+      const encryptedData = await encrypt(payload.buffer, hashedPassword);
       const encryptedPath = (
         await encrypt(relativeFilePath, hashedPassword, true)
       ).toHex();

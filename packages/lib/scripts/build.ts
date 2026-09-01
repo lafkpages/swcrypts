@@ -41,7 +41,13 @@ await build({
   outdir: "wrapper-dist",
 });
 
-const libExports = ["index.ts", "files.ts", "salt.ts", "wrapper.ts"];
+const libExports = [
+  "index.ts",
+  "files.ts",
+  "metadata.ts",
+  "salt.ts",
+  "wrapper.ts",
+];
 
 await build({
   entrypoints: libExports,

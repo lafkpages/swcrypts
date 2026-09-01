@@ -1,9 +1,10 @@
 /// <reference no-default-lib="true" />
 /// <reference lib="webworker" />
 
-import { contentType } from "mime-types";
+import { safeParse } from "valibot";
 
 import { decrypt, encrypt, serviceWorkerFileName } from "../..";
+import { FileMetadata } from "../../metadata";
 import { getPasswordFromCache } from "../cache";
 import { patchCspForInlineScript } from "./csp";
 
@@ -12,6 +13,8 @@ declare const self: ServiceWorkerGlobalScope;
 const swCryptsTypeHeader = "X-SwCrypts-Type";
 
 let hashedPassword: string | null = null;
+
+const decoder = new TextDecoder();
 
 self.addEventListener("install", (e) => {
   console.debug("SwCrypts service worker installing");
@@ -60,18 +63,15 @@ async function fetchAsset(url: URL, request: Request) {
     });
   }
 
-  const [, resp, decryptedData] = await fetchAndDecrypt(request);
+  const [, resp, decryptedMetadata, decryptedData] =
+    await fetchAndDecrypt(request);
 
-  if (!resp.ok) {
+  if (!resp.ok || !decryptedMetadata) {
     return cloneResponseInjectHeaders(resp, "asset");
   }
 
   const headers = new Headers(resp.headers);
-  headers.set(
-    "Content-Type",
-    contentType(url.pathname.replace(/^.*\//, "")) ||
-      "application/octet-stream",
-  );
+  headers.set("Content-Type", decryptedMetadata.mimeType);
   headers.set("X-Content-Type-Options", "nosniff");
   headers.set(swCryptsTypeHeader, "asset");
 
@@ -99,16 +99,17 @@ async function fetchEntryPoint(url: URL, request: Request) {
     );
   }
 
-  const [, resp, decryptedPage] = await fetchAndDecrypt(request);
+  const [, resp, decryptedMetadata, decryptedPage] =
+    await fetchAndDecrypt(request);
 
-  if (!resp.ok || !decryptedPage) {
+  if (!resp.ok || !decryptedMetadata) {
     return cloneResponseInjectHeaders(resp, "entrypoint; error");
   }
 
-  const decodedPage = new TextDecoder().decode(decryptedPage);
+  const decodedPage = decoder.decode(decryptedPage);
 
   const headers = new Headers(resp.headers);
-  headers.set("Content-Type", "text/html");
+  headers.set("Content-Type", decryptedMetadata.mimeType);
   headers.set(swCryptsTypeHeader, "entrypoint");
 
   const upstreamCsp = headers.get("Content-Security-Policy");
@@ -133,7 +134,9 @@ async function fetchEntryPoint(url: URL, request: Request) {
 
 async function fetchAndDecrypt(
   request: Request,
-): Promise<[URL, Response, ArrayBuffer | null]> {
+): Promise<
+  [URL, Response, FileMetadata, ArrayBuffer] | [URL, Response, null, null]
+> {
   if (!hashedPassword) {
     throw new Error();
   }
@@ -169,12 +172,39 @@ async function fetchAndDecrypt(
   const resp = await fetch(req);
 
   if (!resp.ok) {
-    return [url, resp, null];
+    return [url, resp, null, null];
   }
 
   const encryptedData = await resp.bytes();
+  const decryptedData = await decrypt(encryptedData, hashedPassword);
 
-  return [url, resp, await decrypt(encryptedData, hashedPassword)];
+  const decryptedView = new DataView(decryptedData);
+
+  const metaVersion = decryptedView.getUint8(0);
+
+  if (metaVersion !== 1) {
+    return [url, resp, null, null];
+  }
+
+  const metadataLength = decryptedView.getUint32(1);
+  const metadata = decryptedData.slice(5, 5 + metadataLength);
+
+  let decodedMetadata: unknown;
+  try {
+    decodedMetadata = JSON.parse(decoder.decode(metadata));
+  } catch {
+    return [url, resp, null, null];
+  }
+
+  const parsedMetadata = safeParse(FileMetadata, decodedMetadata);
+
+  if (!parsedMetadata.success) {
+    return [url, resp, null, null];
+  }
+
+  const content = decryptedData.slice(5 + metadataLength);
+
+  return [url, resp, parsedMetadata.output, content];
 }
 
 function cloneResponseInjectHeaders(resp: Response, swCryptsType: string) {
