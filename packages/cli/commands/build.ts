@@ -6,9 +6,15 @@ import { join, relative, resolve } from "node:path";
 import { defineCommand, option } from "@bunli/core";
 import { z } from "zod";
 
-import { encrypt, hashPassword, serviceWorkerFileName } from "@swcrypts/core";
+import { serviceWorkerFileName } from "@swcrypts/core/constants";
+import {
+  deriveFilePathsKey,
+  encrypt,
+  encryptFilePath,
+  hashPassword,
+} from "@swcrypts/core/crypto";
+import { generateRandomSalt, isValidSalt } from "@swcrypts/core/crypto/salt";
 import { fileIsEntryPoint, filterIgnoredFiles } from "@swcrypts/core/files";
-import { generateRandomSalt, isValidSalt } from "@swcrypts/core/salt";
 import {
   generateCryptoCheck,
   getServiceWorkerJs,
@@ -101,6 +107,7 @@ export default defineCommand({
 
     const hashedPassword = await hashPassword(password, salt);
     const cryptoCheck = await generateCryptoCheck(hashedPassword);
+    const filePathsKey = await deriveFilePathsKey(hashedPassword);
 
     const customStylesPath =
       config.customStyles && configPath
@@ -149,9 +156,11 @@ export default defineCommand({
       const isEntryPoint = fileIsEntryPoint(relativeFilePath);
 
       const encryptedData = await encrypt(payload.buffer, hashedPassword);
-      const encryptedPath = (
-        await encrypt(relativeFilePath, hashedPassword, true)
-      ).toHex();
+      const encryptedPath = await encryptFilePath(
+        relativeFilePath,
+        filePathsKey,
+      );
+
       const outputFilePath = join(flags.outdir, relativeFilePath);
       const outputFilePathEnc =
         join(flags.outdir, encryptedPath) + ".swcrypts.enc";

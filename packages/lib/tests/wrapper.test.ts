@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 
-import { decrypt, hashPassword } from "../dist";
+import { decrypt, hashPassword } from "../dist/crypto";
 import {
   generateCryptoCheck,
   getServiceWorkerJs,

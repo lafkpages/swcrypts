@@ -1,19 +1,14 @@
-export const serviceWorkerFileName = "__swcrypts_sw.js";
-
 const encoder = new TextEncoder();
 
 export async function encrypt(
   data: string | BufferSource,
   hashedPassword: string,
-  deterministic = false,
 ) {
   if (typeof data === "string") {
     data = encoder.encode(data);
   }
 
-  const iv = deterministic
-    ? new Uint8Array((await crypto.subtle.digest("SHA-256", data)).slice(0, 12))
-    : crypto.getRandomValues(new Uint8Array(12));
+  const iv = crypto.getRandomValues(new Uint8Array(12));
 
   const ciphertext = new Uint8Array(
     await crypto.subtle.encrypt(
@@ -76,5 +71,43 @@ export async function hashPassword(password: string, salt: string) {
       ),
       256,
     ),
+  ).toHex();
+}
+
+/**
+ * Needed for {@link encryptFilePath}.
+ */
+export async function deriveFilePathsKey(hashedPassword: string) {
+  const master = await crypto.subtle.importKey(
+    "raw",
+    Uint8Array.fromHex(hashedPassword),
+    "HKDF",
+    false,
+    ["deriveKey"],
+  );
+
+  return crypto.subtle.deriveKey(
+    {
+      name: "HKDF",
+      hash: "SHA-256",
+      salt: new Uint8Array(0),
+      info: encoder.encode("swcrypts-paths"),
+    },
+    master,
+    { name: "HMAC", hash: "SHA-256" },
+    false,
+    ["sign"],
+  );
+}
+
+/**
+ * @param filePathsKey The key used to encrypt the file path with, derived via {@link deriveFilePathsKey}.
+ */
+export async function encryptFilePath(
+  filePath: string,
+  filePathsKey: CryptoKey,
+) {
+  return new Uint8Array(
+    await crypto.subtle.sign("HMAC", filePathsKey, encoder.encode(filePath)),
   ).toHex();
 }

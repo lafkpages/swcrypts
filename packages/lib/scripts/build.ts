@@ -42,8 +42,8 @@ const swBuild = await build({
 
 // Build the library and write it out
 await build({
-  entrypoints: Object.keys(exports).map((s) =>
-    s === "." ? "./src/index.ts" : `./src/${s.slice(2)}.ts`,
+  entrypoints: Object.entries(exports).map(([, entrypoint]) =>
+    entrypoint.default.replace(/^\.\/dist\//, "./src/").replace(/\.js$/, ".ts"),
   ),
   target: "browser",
   minify: true,

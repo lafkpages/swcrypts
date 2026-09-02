@@ -1,6 +1,7 @@
 /// <reference lib="dom" />
 
-import { decrypt, hashPassword, serviceWorkerFileName } from "..";
+import { serviceWorkerFileName } from "../constants";
+import { decrypt, hashPassword } from "../crypto";
 import {
   getPasswordFromCache,
   removeCache,

@@ -1,6 +1,6 @@
 /// <reference path="./wrapper.d.ts" />
 
-import { encrypt } from ".";
+import { encrypt } from "./crypto";
 import wrapperHtml from "./wrapper/index.html?raw";
 import swJs from "./wrapper/sw/index.ts?raw";
 

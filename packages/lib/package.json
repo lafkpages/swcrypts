@@ -2,16 +2,22 @@
   "name": "@swcrypts/core",
   "version": "0.0.3",
   "type": "module",
-  "types": "./dist/index.d.ts",
-  "module": "./dist/index.js",
   "files": [
     "dist",
     "README.md"
   ],
   "exports": {
-    ".": {
-      "types": "./dist/index.d.ts",
-      "default": "./dist/index.js"
+    "./constants": {
+      "types": "./dist/constants.d.ts",
+      "default": "./dist/constants.js"
+    },
+    "./crypto": {
+      "types": "./dist/crypto/index.d.ts",
+      "default": "./dist/crypto/index.js"
+    },
+    "./crypto/salt": {
+      "types": "./dist/crypto/salt.d.ts",
+      "default": "./dist/crypto/salt.js"
     },
     "./files": {
       "types": "./dist/files.d.ts",
@@ -20,10 +26,6 @@
     "./metadata": {
       "types": "./dist/metadata.d.ts",
       "default": "./dist/metadata.js"
-    },
-    "./salt": {
-      "types": "./dist/salt.d.ts",
-      "default": "./dist/salt.js"
     },
     "./wrapper": {
       "types": "./dist/wrapper.d.ts",

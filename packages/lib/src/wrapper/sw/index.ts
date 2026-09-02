@@ -3,7 +3,8 @@
 
 import { safeParse } from "valibot";
 
-import { decrypt, encrypt, serviceWorkerFileName } from "../..";
+import { serviceWorkerFileName } from "../../constants";
+import { decrypt, deriveFilePathsKey, encryptFilePath } from "../../crypto";
 import { FileMetadata } from "../../metadata";
 import { getPasswordFromCache } from "../cache";
 import { patchCspForInlineScript } from "./csp";
@@ -24,6 +25,8 @@ const enum SwCryptsFileTypeDirective {
 }
 
 let hashedPassword: string | null = null;
+let filePathsKey: CryptoKey | null = null;
+
 let updateRequested = false;
 
 const decoder = new TextDecoder();
@@ -64,17 +67,29 @@ self.addEventListener("fetch", (e) => {
   );
 });
 
+async function getAndDeriveKeys() {
+  if (!hashedPassword) {
+    hashedPassword = await getPasswordFromCache();
+  }
+
+  if (!hashedPassword) {
+    return false;
+  }
+
+  if (!filePathsKey) {
+    filePathsKey = await deriveFilePathsKey(hashedPassword);
+  }
+
+  return true;
+}
+
 async function fetchAsset(url: URL, request: Request) {
   console.debug(
     "SwCrypts service worker intercepting fetch for asset",
     url.pathname,
   );
 
-  if (!hashedPassword) {
-    hashedPassword = await getPasswordFromCache();
-  }
-
-  if (!hashedPassword) {
+  if (!(await getAndDeriveKeys())) {
     return new Response("Unauthorized SwCrypts", {
       status: 401,
       headers: {
@@ -113,11 +128,7 @@ async function fetchEntryPoint(url: URL, request: Request) {
     url.pathname,
   );
 
-  if (!hashedPassword) {
-    hashedPassword = await getPasswordFromCache();
-  }
-
-  if (!hashedPassword) {
+  if (!(await getAndDeriveKeys())) {
     return cloneResponseInjectHeaders(
       await fetch(request),
       SwCryptsFileTypeDirective.EntrypointUnauthed,
@@ -169,19 +180,16 @@ async function fetchAndDecrypt(
   | [URL, Response, number, FileMetadata, ArrayBuffer]
   | [URL, Response, number | null, null, null]
 > {
-  if (!hashedPassword) {
+  if (!hashedPassword || !filePathsKey) {
     throw new Error();
   }
 
   const url = new URL(request.url);
 
-  url.pathname = `/${(
-    await encrypt(
-      url.pathname.slice(1) + (url.pathname.endsWith("/") ? "index.html" : ""),
-      hashedPassword,
-      true,
-    )
-  ).toHex()}.swcrypts.enc`;
+  url.pathname = `/${await encryptFilePath(
+    url.pathname.slice(1) + (url.pathname.endsWith("/") ? "index.html" : ""),
+    filePathsKey,
+  )}.swcrypts.enc`;
 
   // Cannot reuse the original request as it has mode: "navigate" and navigation
   // requests cannot be constructed via JS (only by the browser). Either way, we

@@ -1,6 +1,12 @@
 import { describe, expect, test } from "bun:test";
 
-import { decrypt, encrypt, hashPassword } from "../dist";
+import {
+  decrypt,
+  deriveFilePathsKey,
+  encrypt,
+  encryptFilePath,
+  hashPassword,
+} from "../dist/crypto";
 
 describe("hashPassword", () => {
   test("is deterministic for the same password and salt", async () => {
@@ -37,22 +43,12 @@ describe("encrypt", () => {
     expect(encrypted.length).toBeGreaterThan(12);
   });
 
-  test("deterministic mode produces identical output for identical input", async () => {
-    const key = await hashPassword("pw", "s".repeat(32));
-    const data = new TextEncoder().encode("deterministic content");
-
-    const enc1 = await encrypt(data, key, true);
-    const enc2 = await encrypt(data, key, true);
-
-    expect(enc1).toEqual(enc2);
-  });
-
-  test("non-deterministic mode produces different output for identical input", async () => {
+  test("produces different output for identical input", async () => {
     const key = await hashPassword("pw", "s".repeat(32));
     const data = new TextEncoder().encode("random content");
 
-    const enc1 = await encrypt(data, key, false);
-    const enc2 = await encrypt(data, key, false);
+    const enc1 = await encrypt(data, key);
+    const enc2 = await encrypt(data, key);
 
     expect(enc1).not.toEqual(enc2);
   });
@@ -61,6 +57,44 @@ describe("encrypt", () => {
     const key = await hashPassword("pw", "s".repeat(32));
     const encrypted = await encrypt("string input", key);
     expect(encrypted.length).toBeGreaterThan(12);
+  });
+});
+
+describe("encryptFilePath", () => {
+  test("returns a 64-character lowercase hex string", async () => {
+    const key = await deriveFilePathsKey(
+      await hashPassword("pw", "s".repeat(32)),
+    );
+    const encryptedPath = await encryptFilePath("index.html", key);
+
+    expect(encryptedPath).toMatch(/^[0-9a-f]{64}$/);
+  });
+
+  test("is deterministic for the same path and key", async () => {
+    const key = await deriveFilePathsKey(
+      await hashPassword("pw", "s".repeat(32)),
+    );
+
+    const path1 = await encryptFilePath("assets/logo.png", key);
+    const path2 = await encryptFilePath("assets/logo.png", key);
+
+    expect(path1).toBe(path2);
+  });
+
+  test("produces different paths for different inputs", async () => {
+    const key1 = await deriveFilePathsKey(
+      await hashPassword("pw", "s".repeat(32)),
+    );
+    const key2 = await deriveFilePathsKey(
+      await hashPassword("other", "s".repeat(32)),
+    );
+
+    const path1 = await encryptFilePath("index.html", key1);
+    const path2 = await encryptFilePath("about.html", key1);
+    const path3 = await encryptFilePath("index.html", key2);
+
+    expect(path1).not.toBe(path2);
+    expect(path1).not.toBe(path3);
   });
 });
 
