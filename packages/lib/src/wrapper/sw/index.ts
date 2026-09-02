@@ -11,10 +11,11 @@ import { patchCspForInlineScript } from "./csp";
 
 declare const self: ServiceWorkerGlobalScope;
 
+// Debugging headers
 const swCryptsFileTypeHeader = "X-SwCrypts-Type";
 const swCryptsFileVersionHeader = "X-SwCrypts-File-Version";
 
-const enum SwCryptsFileTypeDirective {
+const enum FileTypeDirective {
   None = "none",
   Asset = "asset",
   AssetUnauthed = "asset; unauthed",
@@ -23,6 +24,13 @@ const enum SwCryptsFileTypeDirective {
   EntrypointUnauthed = "entrypoint; unauthed",
   EntrypointError = "entrypoint; error",
 }
+
+interface FileVersion {
+  major: number;
+  minor: number;
+}
+
+const CURRENT_FILE_VERSION: FileVersion = { major: 1, minor: 0 };
 
 let hashedPassword: string | null = null;
 let filePathsKey: CryptoKey | null = null;
@@ -62,7 +70,7 @@ self.addEventListener("fetch", (e) => {
 
   e.respondWith(
     fetch(e.request).then((resp) =>
-      cloneResponseInjectHeaders(resp, SwCryptsFileTypeDirective.None, null),
+      cloneResponseInjectHeaders(resp, FileTypeDirective.None, null),
     ),
   );
 });
@@ -83,6 +91,21 @@ async function getAndDeriveKeys() {
   return true;
 }
 
+function requestServiceWorkerUpdate(newFileVersion: FileVersion) {
+  if (updateRequested) {
+    return;
+  }
+
+  updateRequested = true;
+  self.registration.update().catch((err) => {
+    console.error(
+      `SwCrypts failed to update service worker for new major file version ${newFileVersion.major}:`,
+      err,
+    );
+    updateRequested = false;
+  });
+}
+
 async function fetchAsset(url: URL, request: Request) {
   console.debug(
     "SwCrypts service worker intercepting fetch for asset",
@@ -93,7 +116,7 @@ async function fetchAsset(url: URL, request: Request) {
     return new Response("Unauthorized SwCrypts", {
       status: 401,
       headers: {
-        [swCryptsFileTypeHeader]: SwCryptsFileTypeDirective.AssetUnauthed,
+        [swCryptsFileTypeHeader]: FileTypeDirective.AssetUnauthed,
       },
     });
   }
@@ -104,7 +127,7 @@ async function fetchAsset(url: URL, request: Request) {
   if (!resp.ok || !decryptedMetadata) {
     return cloneResponseInjectHeaders(
       resp,
-      SwCryptsFileTypeDirective.AssetError,
+      FileTypeDirective.AssetError,
       fileVersion,
     );
   }
@@ -112,8 +135,8 @@ async function fetchAsset(url: URL, request: Request) {
   const headers = new Headers(resp.headers);
   headers.set("Content-Type", decryptedMetadata.mimeType);
   headers.set("X-Content-Type-Options", "nosniff");
-  headers.set(swCryptsFileTypeHeader, SwCryptsFileTypeDirective.Asset);
-  headers.set(swCryptsFileVersionHeader, fileVersion.toString());
+  headers.set(swCryptsFileTypeHeader, FileTypeDirective.Asset);
+  headers.set(swCryptsFileVersionHeader, fileVersionToDebugString(fileVersion));
 
   return new Response(decryptedData, {
     status: resp.status,
@@ -131,7 +154,7 @@ async function fetchEntryPoint(url: URL, request: Request) {
   if (!(await getAndDeriveKeys())) {
     return cloneResponseInjectHeaders(
       await fetch(request),
-      SwCryptsFileTypeDirective.EntrypointUnauthed,
+      FileTypeDirective.EntrypointUnauthed,
       null,
     );
   }
@@ -142,7 +165,7 @@ async function fetchEntryPoint(url: URL, request: Request) {
   if (!resp.ok || !decryptedMetadata) {
     return cloneResponseInjectHeaders(
       resp,
-      SwCryptsFileTypeDirective.EntrypointError,
+      FileTypeDirective.EntrypointError,
       fileVersion,
     );
   }
@@ -151,8 +174,8 @@ async function fetchEntryPoint(url: URL, request: Request) {
 
   const headers = new Headers(resp.headers);
   headers.set("Content-Type", decryptedMetadata.mimeType);
-  headers.set(swCryptsFileTypeHeader, SwCryptsFileTypeDirective.Entrypoint);
-  headers.set(swCryptsFileVersionHeader, fileVersion.toString());
+  headers.set(swCryptsFileTypeHeader, FileTypeDirective.Entrypoint);
+  headers.set(swCryptsFileVersionHeader, fileVersionToDebugString(fileVersion));
 
   const upstreamCsp = headers.get("Content-Security-Policy");
   let nonceAttr = "";
@@ -177,8 +200,8 @@ async function fetchEntryPoint(url: URL, request: Request) {
 async function fetchAndDecrypt(
   request: Request,
 ): Promise<
-  | [URL, Response, number, FileMetadata, ArrayBuffer]
-  | [URL, Response, number | null, null, null]
+  | [URL, Response, FileVersion, FileMetadata, ArrayBuffer]
+  | [URL, Response, FileVersion | null, null, null]
 > {
   if (!hashedPassword || !filePathsKey) {
     throw new Error();
@@ -220,25 +243,23 @@ async function fetchAndDecrypt(
 
   const decryptedView = new DataView(decryptedData);
 
-  const fileVersion = decryptedView.getUint8(0);
+  const fileVersion: FileVersion = {
+    major: decryptedView.getUint8(0),
+    minor: decryptedView.getUint8(1),
+  };
 
-  if (fileVersion !== 1) {
-    if (fileVersion > 1 && !updateRequested) {
-      updateRequested = true;
-      self.registration.update().catch((err) => {
-        console.error(
-          `SwCrypts failed to update service worker for new file version ${fileVersion}:`,
-          err,
-        );
-        updateRequested = false;
-      });
+  if (fileVersion.major !== CURRENT_FILE_VERSION.major) {
+    if (fileVersion.major > CURRENT_FILE_VERSION.major) {
+      requestServiceWorkerUpdate(fileVersion);
     }
 
     return [url, resp, fileVersion, null, null];
+  } else if (fileVersion.minor > CURRENT_FILE_VERSION.minor) {
+    requestServiceWorkerUpdate(fileVersion);
   }
 
-  const metadataLength = decryptedView.getUint32(1);
-  const metadata = decryptedData.slice(5, 5 + metadataLength);
+  const metadataLength = decryptedView.getUint32(2);
+  const metadata = decryptedData.slice(6, 6 + metadataLength);
 
   let decodedMetadata: unknown;
   try {
@@ -253,15 +274,15 @@ async function fetchAndDecrypt(
     return [url, resp, fileVersion, null, null];
   }
 
-  const content = decryptedData.slice(5 + metadataLength);
+  const content = decryptedData.slice(6 + metadataLength);
 
   return [url, resp, fileVersion, parsedMetadata.output, content];
 }
 
 function cloneResponseInjectHeaders(
   resp: Response,
-  swCryptsFileType: SwCryptsFileTypeDirective,
-  swCryptsFileVersion: number | null,
+  fileType: FileTypeDirective,
+  fileVersion: FileVersion | null,
 ) {
   if (resp.type === "opaque") {
     return resp;
@@ -269,9 +290,12 @@ function cloneResponseInjectHeaders(
 
   const headers = new Headers(resp.headers);
 
-  headers.set(swCryptsFileTypeHeader, swCryptsFileType);
-  if (swCryptsFileVersion !== null) {
-    headers.set(swCryptsFileVersionHeader, swCryptsFileVersion.toString());
+  headers.set(swCryptsFileTypeHeader, fileType);
+  if (fileVersion !== null) {
+    headers.set(
+      swCryptsFileVersionHeader,
+      fileVersionToDebugString(fileVersion),
+    );
   }
 
   return new Response(resp.body, {
@@ -279,4 +303,8 @@ function cloneResponseInjectHeaders(
     statusText: resp.statusText,
     headers,
   });
+}
+
+function fileVersionToDebugString(fileVersion: FileVersion) {
+  return `${fileVersion.major}.${fileVersion.minor}`;
 }

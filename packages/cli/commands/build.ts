@@ -145,13 +145,14 @@ export default defineCommand({
       );
 
       const payload = new DataView(
-        new ArrayBuffer(5 + metadata.length + data.length),
+        new ArrayBuffer(6 + metadata.length + data.length),
       );
       payload.setUint8(0, 1);
-      payload.setUint32(1, metadata.length);
+      payload.setUint8(1, 0);
+      payload.setUint32(2, metadata.length);
       const payloadBytes = new Uint8Array(payload.buffer);
-      payloadBytes.set(metadata, 5);
-      payloadBytes.set(data, 5 + metadata.length);
+      payloadBytes.set(metadata, 6);
+      payloadBytes.set(data, 6 + metadata.length);
 
       const isEntryPoint = fileIsEntryPoint(relativeFilePath);
 
