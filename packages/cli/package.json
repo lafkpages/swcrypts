@@ -1,7 +1,7 @@
 {
   "name": "swcrypts",
   "description": "Encrypt static sites.",
-  "version": "0.0.2",
+  "version": "0.1.0",
   "type": "module",
   "module": "src/index.ts",
   "private": true,
