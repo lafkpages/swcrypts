@@ -10,14 +10,32 @@ import { patchCspForInlineScript } from "./csp";
 
 declare const self: ServiceWorkerGlobalScope;
 
-const swCryptsTypeHeader = "X-SwCrypts-Type";
+const swCryptsFileTypeHeader = "X-SwCrypts-Type";
+const swCryptsFileVersionHeader = "X-SwCrypts-File-Version";
+
+const enum SwCryptsFileTypeDirective {
+  None = "none",
+  Asset = "asset",
+  AssetUnauthed = "asset; unauthed",
+  AssetError = "asset; error",
+  Entrypoint = "entrypoint",
+  EntrypointUnauthed = "entrypoint; unauthed",
+  EntrypointError = "entrypoint; error",
+}
 
 let hashedPassword: string | null = null;
+let updateRequested = false;
 
 const decoder = new TextDecoder();
 
 self.addEventListener("install", (e) => {
   console.debug("SwCrypts service worker installing");
+  e.waitUntil(self.skipWaiting());
+});
+
+self.addEventListener("activate", (e) => {
+  console.debug("SwCrypts service worker activating");
+  e.waitUntil(self.clients.claim());
 });
 
 self.addEventListener("fetch", (e) => {
@@ -40,7 +58,9 @@ self.addEventListener("fetch", (e) => {
   }
 
   e.respondWith(
-    fetch(e.request).then((resp) => cloneResponseInjectHeaders(resp, "none")),
+    fetch(e.request).then((resp) =>
+      cloneResponseInjectHeaders(resp, SwCryptsFileTypeDirective.None, null),
+    ),
   );
 });
 
@@ -58,22 +78,27 @@ async function fetchAsset(url: URL, request: Request) {
     return new Response("Unauthorized SwCrypts", {
       status: 401,
       headers: {
-        [swCryptsTypeHeader]: "asset; unauthed",
+        [swCryptsFileTypeHeader]: SwCryptsFileTypeDirective.AssetUnauthed,
       },
     });
   }
 
-  const [, resp, decryptedMetadata, decryptedData] =
+  const [, resp, fileVersion, decryptedMetadata, decryptedData] =
     await fetchAndDecrypt(request);
 
   if (!resp.ok || !decryptedMetadata) {
-    return cloneResponseInjectHeaders(resp, "asset");
+    return cloneResponseInjectHeaders(
+      resp,
+      SwCryptsFileTypeDirective.AssetError,
+      fileVersion,
+    );
   }
 
   const headers = new Headers(resp.headers);
   headers.set("Content-Type", decryptedMetadata.mimeType);
   headers.set("X-Content-Type-Options", "nosniff");
-  headers.set(swCryptsTypeHeader, "asset");
+  headers.set(swCryptsFileTypeHeader, SwCryptsFileTypeDirective.Asset);
+  headers.set(swCryptsFileVersionHeader, fileVersion.toString());
 
   return new Response(decryptedData, {
     status: resp.status,
@@ -95,22 +120,28 @@ async function fetchEntryPoint(url: URL, request: Request) {
   if (!hashedPassword) {
     return cloneResponseInjectHeaders(
       await fetch(request),
-      "entrypoint; unauthed",
+      SwCryptsFileTypeDirective.EntrypointUnauthed,
+      null,
     );
   }
 
-  const [, resp, decryptedMetadata, decryptedPage] =
+  const [, resp, fileVersion, decryptedMetadata, decryptedPage] =
     await fetchAndDecrypt(request);
 
   if (!resp.ok || !decryptedMetadata) {
-    return cloneResponseInjectHeaders(resp, "entrypoint; error");
+    return cloneResponseInjectHeaders(
+      resp,
+      SwCryptsFileTypeDirective.EntrypointError,
+      fileVersion,
+    );
   }
 
   const decodedPage = decoder.decode(decryptedPage);
 
   const headers = new Headers(resp.headers);
   headers.set("Content-Type", decryptedMetadata.mimeType);
-  headers.set(swCryptsTypeHeader, "entrypoint");
+  headers.set(swCryptsFileTypeHeader, SwCryptsFileTypeDirective.Entrypoint);
+  headers.set(swCryptsFileVersionHeader, fileVersion.toString());
 
   const upstreamCsp = headers.get("Content-Security-Policy");
   let nonceAttr = "";
@@ -135,7 +166,8 @@ async function fetchEntryPoint(url: URL, request: Request) {
 async function fetchAndDecrypt(
   request: Request,
 ): Promise<
-  [URL, Response, FileMetadata, ArrayBuffer] | [URL, Response, null, null]
+  | [URL, Response, number, FileMetadata, ArrayBuffer]
+  | [URL, Response, number | null, null, null]
 > {
   if (!hashedPassword) {
     throw new Error();
@@ -172,7 +204,7 @@ async function fetchAndDecrypt(
   const resp = await fetch(req);
 
   if (!resp.ok) {
-    return [url, resp, null, null];
+    return [url, resp, null, null, null];
   }
 
   const encryptedData = await resp.bytes();
@@ -180,10 +212,21 @@ async function fetchAndDecrypt(
 
   const decryptedView = new DataView(decryptedData);
 
-  const metaVersion = decryptedView.getUint8(0);
+  const fileVersion = decryptedView.getUint8(0);
 
-  if (metaVersion !== 1) {
-    return [url, resp, null, null];
+  if (fileVersion !== 1) {
+    if (fileVersion > 1 && !updateRequested) {
+      updateRequested = true;
+      self.registration.update().catch((err) => {
+        console.error(
+          `SwCrypts failed to update service worker for new file version ${fileVersion}:`,
+          err,
+        );
+        updateRequested = false;
+      });
+    }
+
+    return [url, resp, fileVersion, null, null];
   }
 
   const metadataLength = decryptedView.getUint32(1);
@@ -193,27 +236,36 @@ async function fetchAndDecrypt(
   try {
     decodedMetadata = JSON.parse(decoder.decode(metadata));
   } catch {
-    return [url, resp, null, null];
+    return [url, resp, fileVersion, null, null];
   }
 
   const parsedMetadata = safeParse(FileMetadata, decodedMetadata);
 
   if (!parsedMetadata.success) {
-    return [url, resp, null, null];
+    return [url, resp, fileVersion, null, null];
   }
 
   const content = decryptedData.slice(5 + metadataLength);
 
-  return [url, resp, parsedMetadata.output, content];
+  return [url, resp, fileVersion, parsedMetadata.output, content];
 }
 
-function cloneResponseInjectHeaders(resp: Response, swCryptsType: string) {
+function cloneResponseInjectHeaders(
+  resp: Response,
+  swCryptsFileType: SwCryptsFileTypeDirective,
+  swCryptsFileVersion: number | null,
+) {
   if (resp.type === "opaque") {
     return resp;
   }
 
   const headers = new Headers(resp.headers);
-  headers.set(swCryptsTypeHeader, swCryptsType);
+
+  headers.set(swCryptsFileTypeHeader, swCryptsFileType);
+  if (swCryptsFileVersion !== null) {
+    headers.set(swCryptsFileVersionHeader, swCryptsFileVersion.toString());
+  }
+
   return new Response(resp.body, {
     status: resp.status,
     statusText: resp.statusText,
