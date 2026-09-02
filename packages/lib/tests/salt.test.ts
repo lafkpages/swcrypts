@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 
-import { generateRandomSalt, isValidSalt } from "../src/salt";
+import { generateRandomSalt, isValidSalt } from "../dist/salt";
 
 describe("generateRandomSalt", () => {
   test("returns a 32-character lowercase hex string", () => {

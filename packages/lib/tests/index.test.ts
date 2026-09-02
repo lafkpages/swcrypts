@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 
-import { decrypt, encrypt, hashPassword } from "../src";
+import { decrypt, encrypt, hashPassword } from "../dist";
 
 describe("hashPassword", () => {
   test("is deterministic for the same password and salt", async () => {

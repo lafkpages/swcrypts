@@ -1,11 +1,11 @@
 import { describe, expect, test } from "bun:test";
 
-import { decrypt, hashPassword } from "../src";
+import { decrypt, hashPassword } from "../dist";
 import {
   generateCryptoCheck,
   getServiceWorkerJs,
   getWrapperHtml,
-} from "../src/wrapper";
+} from "../dist/wrapper";
 
 describe("getWrapperHtml", () => {
   const baseOptions = {
