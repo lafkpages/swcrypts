@@ -11,7 +11,12 @@
     "moduleResolution": "bundler",
     "allowImportingTsExtensions": true,
     "verbatimModuleSyntax": true,
-    "noEmit": true,
+
+    // Library type generation
+    "declaration": true,
+    "emitDeclarationOnly": true,
+    "rootDir": "src",
+    "outDir": "dist",
 
     // Best practices
     "strict": true,
@@ -25,4 +30,7 @@
     "noUnusedParameters": false,
     "noPropertyAccessFromIndexSignature": false,
   },
+
+  "include": ["src/**/*.ts"],
+  "exclude": ["src/wrapper/**/*.ts"],
 }

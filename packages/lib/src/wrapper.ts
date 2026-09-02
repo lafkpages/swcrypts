@@ -1,6 +1,8 @@
+/// <reference path="./wrapper.d.ts" />
+
 import { encrypt } from ".";
-import wrapperHtml from "../dist-wrapper/html";
-import swJs from "../dist-wrapper/sw";
+import wrapperHtml from "./wrapper/index.html?raw";
+import swJs from "./wrapper/sw/index.ts?raw";
 
 export interface WrapperOptions {
   cryptoCheck: Uint8Array;
