@@ -1,3 +1,5 @@
+/// <reference types="bun" />
+
 import { describe, expect, test } from "bun:test";
 
 import { fileIsEntryPoint, filterIgnoredFiles } from "../dist/files";

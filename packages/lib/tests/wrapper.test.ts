@@ -1,3 +1,5 @@
+/// <reference types="bun" />
+
 import { describe, expect, test } from "bun:test";
 
 import { decrypt, hashPassword } from "../dist/crypto";
