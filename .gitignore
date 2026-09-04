@@ -6,7 +6,7 @@ out
 dist
 dist-*
 *.tgz
-/example-enc
+/site-enc
 /packages/lib/README.md
 
 # code coverage

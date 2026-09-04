@@ -6,7 +6,7 @@ on:
     paths:
       - "packages/lib/**"
       - "packages/cli/**"
-      - "example/**"
+      - "site/**"
       - ".github/workflows/deploy.yml"
       - "package.json"
       - "bun.lock"
@@ -51,13 +51,13 @@ jobs:
       - name: Build CLI
         run: bun run --cwd packages/cli build
 
-      - name: Encrypt example site
-        run: bun run --cwd packages/cli . build -i ../../example -o ../../example-enc
+      - name: Encrypt site
+        run: bun run --cwd packages/cli . build -i ../../site -o ../../site-enc
 
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: example-enc
+          path: site-enc
 
   deploy:
     needs: build

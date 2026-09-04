@@ -39,11 +39,12 @@ Bun workspace monorepo (`packages/*`):
 - `packages/cli` — the `swcrypts` CLI (built on `@bunli/core`, options validated
   with `zod`). `commands/build.ts` is the encrypt command; `config.ts` loads the
   user config (`.swcrypts.json` / `.json5` / `.jsonc`).
-- `example/` — a sample static site; `example-enc/` is gitignored build output.
+- `site/` — SwCrypts' own static site; `site-enc/` is gitignored build output.
 
 ## Tooling
 
-- **Runtime & package manager: Bun.** Do not add npm/pnpm/yarn lockfiles.
+- **Runtime & package manager: Bun.** If `bun` is not on PATH, try `~/.bun/bin/bun`.
+  Do not add npm/pnpm/yarn lockfiles.
 - **TypeScript** (peer `typescript@^7`), strict mode, bundler resolution,
   `verbatimModuleSyntax`, `noUncheckedIndexedAccess`.
 - **Prettier** with `@ianvs/prettier-plugin-sort-imports` (import order is
@@ -62,6 +63,9 @@ Install first: `bun install`
 > failures.
 
 ```sh
+# Format everything (also fixes import order)
+bun run -b format
+
 # Build the library (bundles wrapper + SW, emits .d.ts via tsc)
 bun run --cwd packages/lib build
 
@@ -72,11 +76,8 @@ bun test --cwd packages/lib
 bun run --cwd packages/cli build
 bun test --cwd packages/cli
 
-# Format everything (also fixes import order)
-bun run -b format
-
-# Run the CLI against a static site
-bun run --cwd packages/cli . build -i ../../example -o ../../example-enc
+# Run the CLI against SwCrypts' own static site
+bun run build:site
 ```
 
 CI (`.github/workflows/test.yml`) runs exactly: build lib → test lib → build CLI
@@ -164,5 +165,5 @@ service workers must keep working or self-heal.
   naming affects already-deployed sites and cached service workers — treat as
   breaking and preserve forward/backward compatibility per the versioning
   contract.
-- `example-enc/` and `packages/lib/README.md` are generated/gitignored — don't
+- `site-enc/` and `packages/lib/README.md` are generated/gitignored — don't
   commit them.

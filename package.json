@@ -14,6 +14,6 @@
   },
   "scripts": {
     "format": "prettier --write .",
-    "test": "bun test --cwd packages/lib && bun test --cwd packages/cli"
+    "build:site": "bun run --cwd packages/cli . build -i ../../site -o ../../site-enc"
   }
 }
