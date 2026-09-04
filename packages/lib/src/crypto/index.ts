@@ -1,7 +1,9 @@
 const encoder = new TextEncoder();
 
-export async function encrypt(
-  data: string | BufferSource,
+type EncryptionData = Parameters<typeof crypto.subtle.encrypt>[2];
+
+export async function encryptData(
+  data: string | EncryptionData,
   hashedPassword: string,
 ) {
   if (typeof data === "string") {
@@ -33,7 +35,7 @@ export async function encrypt(
   return result;
 }
 
-export async function decrypt(
+export async function decryptData(
   encryptedData: Uint8Array<ArrayBuffer>,
   hashedPassword: string,
 ) {
@@ -107,7 +109,9 @@ export async function encryptFilePath(
   filePath: string,
   filePathsKey: CryptoKey,
 ) {
-  return new Uint8Array(
-    await crypto.subtle.sign("HMAC", filePathsKey, encoder.encode(filePath)),
-  ).toHex();
+  return (
+    new Uint8Array(
+      await crypto.subtle.sign("HMAC", filePathsKey, encoder.encode(filePath)),
+    ).toHex() + ".swcrypts.enc"
+  );
 }

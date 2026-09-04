@@ -19,13 +19,21 @@
       "types": "./dist/crypto/salt.d.ts",
       "default": "./dist/crypto/salt.js"
     },
+    "./decrypt": {
+      "types": "./dist/decrypt.d.ts",
+      "default": "./dist/decrypt.js"
+    },
+    "./encrypt": {
+      "types": "./dist/encrypt.d.ts",
+      "default": "./dist/encrypt.js"
+    },
     "./files": {
       "types": "./dist/files.d.ts",
       "default": "./dist/files.js"
     },
-    "./metadata": {
-      "types": "./dist/metadata.d.ts",
-      "default": "./dist/metadata.js"
+    "./payloads": {
+      "types": "./dist/payloads.d.ts",
+      "default": "./dist/payloads.js"
     },
     "./wrapper": {
       "types": "./dist/wrapper.d.ts",

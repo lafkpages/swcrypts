@@ -1,11 +1,12 @@
 /// <reference no-default-lib="true" />
 /// <reference lib="webworker" />
 
-import { safeParse } from "valibot";
+import type { FileMetadata, PayloadVersion } from "../../payloads";
 
 import { serviceWorkerFileName } from "../../constants";
-import { decrypt, deriveFilePathsKey, encryptFilePath } from "../../crypto";
-import { FileMetadata } from "../../metadata";
+import { deriveFilePathsKey, encryptFilePath } from "../../crypto";
+import { decryptFile } from "../../decrypt";
+import { decodeFilePayload } from "../../payloads";
 import { getPasswordFromCache } from "../cache";
 import { patchCspForInlineScript } from "./csp";
 
@@ -13,7 +14,7 @@ declare const self: ServiceWorkerGlobalScope;
 
 // Debugging headers
 const swCryptsFileTypeHeader = "X-SwCrypts-Type";
-const swCryptsFileVersionHeader = "X-SwCrypts-File-Version";
+const swCryptsPayloadVersionHeader = "X-SwCrypts-Payload-Version";
 
 const enum FileTypeDirective {
   None = "none",
@@ -25,12 +26,7 @@ const enum FileTypeDirective {
   EntrypointError = "entrypoint; error",
 }
 
-interface FileVersion {
-  major: number;
-  minor: number;
-}
-
-const CURRENT_FILE_VERSION: FileVersion = { major: 1, minor: 0 };
+const CURRENT_PAYLOAD_VERSION: PayloadVersion = { major: 1, minor: 0 };
 
 let hashedPassword: string | null = null;
 let filePathsKey: CryptoKey | null = null;
@@ -91,7 +87,7 @@ async function getAndDeriveKeys() {
   return true;
 }
 
-function requestServiceWorkerUpdate(newFileVersion: FileVersion) {
+function requestServiceWorkerUpdate(newPayloadVersion: PayloadVersion) {
   if (updateRequested) {
     return;
   }
@@ -99,7 +95,7 @@ function requestServiceWorkerUpdate(newFileVersion: FileVersion) {
   updateRequested = true;
   self.registration.update().catch((err) => {
     console.error(
-      `SwCrypts failed to update service worker for new major file version ${newFileVersion.major}:`,
+      `SwCrypts failed to update service worker for new major payload version ${newPayloadVersion.major}:`,
       err,
     );
     updateRequested = false;
@@ -121,14 +117,14 @@ async function fetchAsset(url: URL, request: Request) {
     });
   }
 
-  const [, resp, fileVersion, decryptedMetadata, decryptedData] =
+  const [, resp, payloadVersion, decryptedMetadata, decryptedData] =
     await fetchAndDecrypt(request);
 
   if (!resp.ok || !decryptedMetadata) {
     return cloneResponseInjectHeaders(
       resp,
       FileTypeDirective.AssetError,
-      fileVersion,
+      payloadVersion,
     );
   }
 
@@ -136,7 +132,10 @@ async function fetchAsset(url: URL, request: Request) {
   headers.set("Content-Type", decryptedMetadata.mimeType);
   headers.set("X-Content-Type-Options", "nosniff");
   headers.set(swCryptsFileTypeHeader, FileTypeDirective.Asset);
-  headers.set(swCryptsFileVersionHeader, fileVersionToDebugString(fileVersion));
+  headers.set(
+    swCryptsPayloadVersionHeader,
+    payloadVersionToDebugString(payloadVersion),
+  );
 
   return new Response(decryptedData, {
     status: resp.status,
@@ -159,14 +158,14 @@ async function fetchEntryPoint(url: URL, request: Request) {
     );
   }
 
-  const [, resp, fileVersion, decryptedMetadata, decryptedPage] =
+  const [, resp, payloadVersion, decryptedMetadata, decryptedPage] =
     await fetchAndDecrypt(request);
 
   if (!resp.ok || !decryptedMetadata) {
     return cloneResponseInjectHeaders(
       resp,
       FileTypeDirective.EntrypointError,
-      fileVersion,
+      payloadVersion,
     );
   }
 
@@ -175,7 +174,10 @@ async function fetchEntryPoint(url: URL, request: Request) {
   const headers = new Headers(resp.headers);
   headers.set("Content-Type", decryptedMetadata.mimeType);
   headers.set(swCryptsFileTypeHeader, FileTypeDirective.Entrypoint);
-  headers.set(swCryptsFileVersionHeader, fileVersionToDebugString(fileVersion));
+  headers.set(
+    swCryptsPayloadVersionHeader,
+    payloadVersionToDebugString(payloadVersion),
+  );
 
   const upstreamCsp = headers.get("Content-Security-Policy");
   let nonceAttr = "";
@@ -200,8 +202,8 @@ async function fetchEntryPoint(url: URL, request: Request) {
 async function fetchAndDecrypt(
   request: Request,
 ): Promise<
-  | [URL, Response, FileVersion, FileMetadata, ArrayBuffer]
-  | [URL, Response, FileVersion | null, null, null]
+  | [URL, Response, PayloadVersion, FileMetadata, ArrayBuffer]
+  | [URL, Response, PayloadVersion | null, null, null]
 > {
   if (!hashedPassword || !filePathsKey) {
     throw new Error();
@@ -209,10 +211,12 @@ async function fetchAndDecrypt(
 
   const url = new URL(request.url);
 
-  url.pathname = `/${await encryptFilePath(
-    url.pathname.slice(1) + (url.pathname.endsWith("/") ? "index.html" : ""),
-    filePathsKey,
-  )}.swcrypts.enc`;
+  url.pathname =
+    "/" +
+    (await encryptFilePath(
+      url.pathname.slice(1) + (url.pathname.endsWith("/") ? "index.html" : ""),
+      filePathsKey,
+    ));
 
   // Cannot reuse the original request as it has mode: "navigate" and navigation
   // requests cannot be constructed via JS (only by the browser). Either way, we
@@ -239,62 +243,55 @@ async function fetchAndDecrypt(
   }
 
   const encryptedData = await resp.bytes();
-  const decryptedData = await decrypt(encryptedData, hashedPassword);
+  const decryptedFile = await decryptFile(encryptedData, hashedPassword).catch(
+    (err) => {
+      console.error("Error decrypting file:", err);
+      return null;
+    },
+  );
 
-  const decryptedView = new DataView(decryptedData);
+  if (!decryptedFile) {
+    return [url, resp, null, null, null];
+  }
+  const { payloadVersion, payloadView } = decryptedFile;
 
-  const fileVersion: FileVersion = {
-    major: decryptedView.getUint8(0),
-    minor: decryptedView.getUint8(1),
-  };
-
-  if (fileVersion.major !== CURRENT_FILE_VERSION.major) {
-    if (fileVersion.major > CURRENT_FILE_VERSION.major) {
-      requestServiceWorkerUpdate(fileVersion);
+  if (payloadVersion.major !== CURRENT_PAYLOAD_VERSION.major) {
+    if (payloadVersion.major > CURRENT_PAYLOAD_VERSION.major) {
+      requestServiceWorkerUpdate(payloadVersion);
     }
 
-    return [url, resp, fileVersion, null, null];
-  } else if (fileVersion.minor > CURRENT_FILE_VERSION.minor) {
-    requestServiceWorkerUpdate(fileVersion);
+    return [url, resp, payloadVersion, null, null];
+  } else if (payloadVersion.minor > CURRENT_PAYLOAD_VERSION.minor) {
+    requestServiceWorkerUpdate(payloadVersion);
   }
 
-  const metadataLength = decryptedView.getUint32(2);
-  const metadata = decryptedData.slice(6, 6 + metadataLength);
-
-  let decodedMetadata: unknown;
   try {
-    decodedMetadata = JSON.parse(decoder.decode(metadata));
-  } catch {
-    return [url, resp, fileVersion, null, null];
+    const { metadata, content } = decodeFilePayload(payloadView);
+    return [url, resp, payloadVersion, metadata, content];
+  } catch (err) {
+    console.error(
+      `Error decoding file payload (payload v${payloadVersionToDebugString(payloadVersion)}):`,
+      err,
+    );
+    return [url, resp, payloadVersion, null, null];
   }
-
-  const parsedMetadata = safeParse(FileMetadata, decodedMetadata);
-
-  if (!parsedMetadata.success) {
-    return [url, resp, fileVersion, null, null];
-  }
-
-  const content = decryptedData.slice(6 + metadataLength);
-
-  return [url, resp, fileVersion, parsedMetadata.output, content];
 }
 
 function cloneResponseInjectHeaders(
   resp: Response,
   fileType: FileTypeDirective,
-  fileVersion: FileVersion | null,
+  payloadVersion: PayloadVersion | null,
 ) {
   if (resp.type === "opaque") {
     return resp;
   }
-
   const headers = new Headers(resp.headers);
 
   headers.set(swCryptsFileTypeHeader, fileType);
-  if (fileVersion !== null) {
+  if (payloadVersion !== null) {
     headers.set(
-      swCryptsFileVersionHeader,
-      fileVersionToDebugString(fileVersion),
+      swCryptsPayloadVersionHeader,
+      payloadVersionToDebugString(payloadVersion),
     );
   }
 
@@ -305,6 +302,6 @@ function cloneResponseInjectHeaders(
   });
 }
 
-function fileVersionToDebugString(fileVersion: FileVersion) {
-  return `${fileVersion.major}.${fileVersion.minor}`;
+function payloadVersionToDebugString(payloadVersion: PayloadVersion) {
+  return `${payloadVersion.major}.${payloadVersion.minor}`;
 }

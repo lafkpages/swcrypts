@@ -1,5 +1,3 @@
-import type { FileMetadata } from "@swcrypts/core/metadata";
-
 import { readdir, rm } from "node:fs/promises";
 import { join, relative, resolve } from "node:path";
 
@@ -7,14 +5,10 @@ import { defineCommand, option } from "@bunli/core";
 import { z } from "zod";
 
 import { serviceWorkerFileName } from "@swcrypts/core/constants";
-import {
-  deriveFilePathsKey,
-  encrypt,
-  encryptFilePath,
-  hashPassword,
-} from "@swcrypts/core/crypto";
+import { deriveFilePathsKey, hashPassword } from "@swcrypts/core/crypto";
 import { generateRandomSalt, isValidSalt } from "@swcrypts/core/crypto/salt";
-import { fileIsEntryPoint, filterIgnoredFiles } from "@swcrypts/core/files";
+import { encryptFile } from "@swcrypts/core/encrypt";
+import { filterIgnoredFiles } from "@swcrypts/core/files";
 import {
   generateCryptoCheck,
   getServiceWorkerJs,
@@ -106,7 +100,6 @@ export default defineCommand({
     }
 
     const hashedPassword = await hashPassword(password, salt);
-    const cryptoCheck = await generateCryptoCheck(hashedPassword);
     const filePathsKey = await deriveFilePathsKey(hashedPassword);
 
     const customStylesPath =
@@ -121,12 +114,11 @@ export default defineCommand({
 
     const wrapperHtml = getWrapperHtml({
       ...config, // careful if new fields are added
-      cryptoCheck,
+
+      cryptoCheck: await generateCryptoCheck(hashedPassword),
       salt,
       customStyles,
     });
-
-    const encoder = new TextEncoder();
 
     for (const relativeFilePath of files) {
       if (relativeFilePath === serviceWorkerFileName) {
@@ -139,38 +131,18 @@ export default defineCommand({
       const filePath = join(flags.indir, relativeFilePath);
       const file = Bun.file(filePath);
 
-      const data = await file.bytes();
-      const metadata = encoder.encode(
-        JSON.stringify({ mimeType: file.type } satisfies FileMetadata),
-      );
-
-      const payload = new DataView(
-        new ArrayBuffer(6 + metadata.length + data.length),
-      );
-      payload.setUint8(0, 1);
-      payload.setUint8(1, 0);
-      payload.setUint32(2, metadata.length);
-      const payloadBytes = new Uint8Array(payload.buffer);
-      payloadBytes.set(metadata, 6);
-      payloadBytes.set(data, 6 + metadata.length);
-
-      const isEntryPoint = fileIsEntryPoint(relativeFilePath);
-
-      const encryptedData = await encrypt(payload.buffer, hashedPassword);
-      const encryptedPath = await encryptFilePath(
+      const { isEntryPoint, encryptedData, encryptedPath } = await encryptFile(
+        file,
         relativeFilePath,
+        hashedPassword,
         filePathsKey,
       );
 
-      const outputFilePath = join(flags.outdir, relativeFilePath);
-      const outputFilePathEnc =
-        join(flags.outdir, encryptedPath) + ".swcrypts.enc";
-
       if (isEntryPoint) {
-        await Bun.write(outputFilePath, wrapperHtml);
+        await Bun.write(join(flags.outdir, relativeFilePath), wrapperHtml);
       }
 
-      await Bun.write(outputFilePathEnc, encryptedData);
+      await Bun.write(join(flags.outdir, encryptedPath), encryptedData);
     }
 
     await Bun.write(

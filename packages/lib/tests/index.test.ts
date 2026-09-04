@@ -3,9 +3,9 @@
 import { describe, expect, test } from "bun:test";
 
 import {
-  decrypt,
+  decryptData,
   deriveFilePathsKey,
-  encrypt,
+  encryptData,
   encryptFilePath,
   hashPassword,
 } from "../dist/crypto";
@@ -35,11 +35,11 @@ describe("hashPassword", () => {
   });
 });
 
-describe("encrypt", () => {
+describe("encryptData", () => {
   test("prepends a 12-byte IV to the ciphertext", async () => {
     const key = await hashPassword("pw", "s".repeat(32));
     const data = new TextEncoder().encode("hello");
-    const encrypted = await encrypt(data, key);
+    const encrypted = await encryptData(data, key);
 
     // IV (12 bytes) + ciphertext (at least something)
     expect(encrypted.length).toBeGreaterThan(12);
@@ -49,15 +49,15 @@ describe("encrypt", () => {
     const key = await hashPassword("pw", "s".repeat(32));
     const data = new TextEncoder().encode("random content");
 
-    const enc1 = await encrypt(data, key);
-    const enc2 = await encrypt(data, key);
+    const enc1 = await encryptData(data, key);
+    const enc2 = await encryptData(data, key);
 
     expect(enc1).not.toEqual(enc2);
   });
 
   test("accepts string input by encoding it", async () => {
     const key = await hashPassword("pw", "s".repeat(32));
-    const encrypted = await encrypt("string input", key);
+    const encrypted = await encryptData("string input", key);
     expect(encrypted.length).toBeGreaterThan(12);
   });
 });
@@ -69,7 +69,7 @@ describe("encryptFilePath", () => {
     );
     const encryptedPath = await encryptFilePath("index.html", key);
 
-    expect(encryptedPath).toMatch(/^[0-9a-f]{64}$/);
+    expect(encryptedPath).toMatch(/^[0-9a-f]{64}\.swcrypts\.enc$/);
   });
 
   test("is deterministic for the same path and key", async () => {
@@ -100,13 +100,13 @@ describe("encryptFilePath", () => {
   });
 });
 
-describe("decrypt", () => {
+describe("decryptData", () => {
   test("round-trips data encrypted with the same key", async () => {
     const key = await hashPassword("secret", "saltsaltsaltsaltsaltsaltsalt12");
     const plaintext = new TextEncoder().encode("hello world 🌍");
 
-    const encrypted = await encrypt(plaintext, key);
-    const decrypted = await decrypt(encrypted, key);
+    const encrypted = await encryptData(plaintext, key);
+    const decrypted = await decryptData(encrypted, key);
 
     expect(new TextDecoder().decode(decrypted)).toBe("hello world 🌍");
   });
@@ -116,28 +116,28 @@ describe("decrypt", () => {
     const wrongKey = await hashPassword("wrong", "s".repeat(32));
     const plaintext = new TextEncoder().encode("secret");
 
-    const encrypted = await encrypt(plaintext, correctKey);
+    const encrypted = await encryptData(plaintext, correctKey);
 
-    expect(decrypt(encrypted, wrongKey)).rejects.toThrow();
+    expect(decryptData(encrypted, wrongKey)).rejects.toThrow();
   });
 
   test("fails with corrupted ciphertext", async () => {
     const key = await hashPassword("pw", "s".repeat(32));
     const plaintext = new TextEncoder().encode("data");
 
-    const encrypted = new Uint8Array(await encrypt(plaintext, key));
+    const encrypted = new Uint8Array(await encryptData(plaintext, key));
     encrypted[encrypted.length - 1] = encrypted[encrypted.length - 1]! ^ 0xff; // flip last byte
 
-    expect(decrypt(encrypted, key)).rejects.toThrow();
+    expect(decryptData(encrypted, key)).rejects.toThrow();
   });
 
   test("fails with truncated data", async () => {
     const key = await hashPassword("pw", "s".repeat(32));
     const encrypted = new Uint8Array(
-      await encrypt(new TextEncoder().encode("x"), key),
+      await encryptData(new TextEncoder().encode("x"), key),
     );
 
-    expect(decrypt(encrypted.subarray(0, 5), key)).rejects.toThrow();
+    expect(decryptData(encrypted.subarray(0, 5), key)).rejects.toThrow();
   });
 });
 
@@ -146,8 +146,8 @@ describe("encrypt / decrypt integration", () => {
     const key = await hashPassword("pw", "s".repeat(32));
     const data = new Uint8Array(0);
 
-    const encrypted = await encrypt(data, key);
-    const decrypted = await decrypt(encrypted, key);
+    const encrypted = await encryptData(data, key);
+    const decrypted = await decryptData(encrypted, key);
 
     expect(new Uint8Array(decrypted)).toEqual(data);
   });
@@ -156,8 +156,8 @@ describe("encrypt / decrypt integration", () => {
     const key = await hashPassword("pw", "s".repeat(32));
     const data = crypto.getRandomValues(new Uint8Array(1024 * 1024)); // 1 MB
 
-    const encrypted = await encrypt(data, key);
-    const decrypted = await decrypt(encrypted, key);
+    const encrypted = await encryptData(data, key);
+    const decrypted = await decryptData(encrypted, key);
 
     expect(new Uint8Array(decrypted)).toEqual(data);
   });

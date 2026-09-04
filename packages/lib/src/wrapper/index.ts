@@ -1,7 +1,7 @@
 /// <reference lib="dom" />
 
 import { serviceWorkerFileName } from "../constants";
-import { decrypt, hashPassword } from "../crypto";
+import { decryptData, hashPassword } from "../crypto";
 import {
   getPasswordFromCache,
   removeCache,
@@ -10,6 +10,7 @@ import {
 
 let failed = false;
 
+// TODO: use isSecureContext
 if (location.protocol !== "https:" && location.hostname !== "localhost") {
   alert(
     "This page must be served over HTTPS to work properly. Please use a secure context to access this page.",
@@ -31,7 +32,7 @@ if (failed) {
     let decryptedCheck: ArrayBuffer | null = null;
 
     try {
-      decryptedCheck = await decrypt(cryptoCheck, storedHashedPassword);
+      decryptedCheck = await decryptData(cryptoCheck, storedHashedPassword);
     } catch (err) {
       console.error("Decryption failed with stored hashed password:", err);
       await removeCache();
@@ -82,7 +83,7 @@ function setupUiOnDocumentLoad() {
     let decryptedCheck: ArrayBuffer | null = null;
 
     try {
-      decryptedCheck = await decrypt(cryptoCheck, hashedPassword);
+      decryptedCheck = await decryptData(cryptoCheck, hashedPassword);
     } catch (err) {
       console.error("Decryption failed:", err);
       alert("Incorrect password, please try again.");

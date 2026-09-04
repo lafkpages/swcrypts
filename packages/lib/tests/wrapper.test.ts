@@ -2,7 +2,7 @@
 
 import { describe, expect, test } from "bun:test";
 
-import { decrypt, hashPassword } from "../dist/crypto";
+import { decryptData, hashPassword } from "../dist/crypto";
 import {
   generateCryptoCheck,
   getServiceWorkerJs,
@@ -79,7 +79,7 @@ describe("generateCryptoCheck", () => {
     const check = await generateCryptoCheck(key);
 
     // Should not throw — valid ciphertext for this key
-    const decrypted = await decrypt(check, key);
+    const decrypted = await decryptData(check, key);
     expect(decrypted).toBeDefined();
   });
 
@@ -88,6 +88,6 @@ describe("generateCryptoCheck", () => {
     const key2 = await hashPassword("password2", "s".repeat(32));
     const check = await generateCryptoCheck(key1);
 
-    expect(decrypt(check, key2)).rejects.toThrow();
+    expect(decryptData(check, key2)).rejects.toThrow();
   });
 });

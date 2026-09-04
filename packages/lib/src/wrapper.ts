@@ -1,6 +1,6 @@
 /// <reference path="./wrapper.d.ts" />
 
-import { encrypt } from "./crypto";
+import { encryptData } from "./crypto";
 import wrapperHtml from "./wrapper/index.html?raw";
 import swJs from "./wrapper/sw/index.ts?raw";
 
@@ -75,7 +75,7 @@ export function getServiceWorkerJs() {
 }
 
 export async function generateCryptoCheck(hashedPassword: string) {
-  return await encrypt(
+  return await encryptData(
     crypto.getRandomValues(new Uint8Array(64)),
     hashedPassword,
   );
