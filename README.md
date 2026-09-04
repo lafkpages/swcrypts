@@ -70,7 +70,8 @@ Generate passwords with a password manager's random generator, `openssl rand -he
 
 ## Contributing
 
-1. Fork the repo and run `bun install` to install dependencies.
-2. This project has no tests yet 🥶 so don't worry about that, just test manually or sm idk
-3. Submit a PR with a clear description of the change.
-4. Be nice and be happy
+1. This project uses [Bun](https://bun.sh) — install it first.
+2. Fork the repo and run `bun install` to install dependencies.
+3. Build the lib before running anything (`bun run --cwd packages/lib build`) — the tests and CLI import from its `dist/`. Then run the tests with `bun test` in the project root.
+4. Submit a PR with a clear description of the change.
+5. Be nice and be happy
