@@ -1,4 +1,5 @@
 /// <reference types="bun" />
+import type { WrapperOptions } from "../dist/wrapper";
 
 import { describe, expect, test } from "bun:test";
 
@@ -10,7 +11,8 @@ import {
 } from "../dist/wrapper";
 
 describe("getWrapperHtml", () => {
-  const baseOptions = {
+  const baseOptions: WrapperOptions = {
+    basePath: "/",
     cryptoCheck: new Uint8Array([1, 2, 3, 4, 5]),
     salt: "a".repeat(32),
   };

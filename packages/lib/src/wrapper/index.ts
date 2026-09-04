@@ -10,13 +10,14 @@ import {
 
 let failed = false;
 
-// TODO: use isSecureContext
-if (location.protocol !== "https:" && location.hostname !== "localhost") {
+if (!window.isSecureContext) {
   alert(
     "This page must be served over HTTPS to work properly. Please use a secure context to access this page.",
   );
   failed = true;
 }
+
+const baseUrl = new URL("{{BASEPATH}}", location.origin);
 
 const cryptoCheck = Uint8Array.fromBase64("{{CRYPTOCHECK}}");
 const cryptoCheckExpectedLength = 64;
@@ -26,7 +27,7 @@ if (failed) {
 } else {
   await registerServiceWorker();
 
-  const storedHashedPassword = await getPasswordFromCache();
+  const storedHashedPassword = await getPasswordFromCache(baseUrl.pathname);
 
   if (storedHashedPassword) {
     let decryptedCheck: ArrayBuffer | null = null;
@@ -94,7 +95,7 @@ function setupUiOnDocumentLoad() {
     }
 
     if (decryptedCheck?.byteLength === cryptoCheckExpectedLength) {
-      await savePasswordInCache(hashedPassword);
+      await savePasswordInCache(baseUrl.pathname, hashedPassword);
       location.reload();
     }
   });
@@ -103,8 +104,7 @@ function setupUiOnDocumentLoad() {
 async function registerServiceWorker() {
   if ("serviceWorker" in navigator) {
     const registration = await navigator.serviceWorker.register(
-      `/${serviceWorkerFileName}`,
-      { scope: "/" },
+      new URL(serviceWorkerFileName, baseUrl),
     );
 
     if (registration.installing) {

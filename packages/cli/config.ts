@@ -6,9 +6,11 @@ import { join } from "node:path";
 
 export interface SwCryptsConfig extends Omit<
   WrapperOptions,
-  "cryptoCheck" | "salt"
+  "basePath" | "cryptoCheck" | "salt"
 > {
   $schema?: string;
+
+  basePath?: string;
 
   password?: string;
   salt?: string;
@@ -49,31 +51,44 @@ async function findConfigFile(indir?: string) {
   return configFile;
 }
 
+export const defaultConfig = {
+  basePath: "/",
+};
+export type ResolvedConfig = SwCryptsConfig &
+  Required<Pick<SwCryptsConfig, keyof typeof defaultConfig>>;
+
+// TODO: use Valibot or Zod to actually validate config
+
 export async function loadConfig(
   configPath?: string | null,
   indir?: string,
-): Promise<[SwCryptsConfig, string | null]> {
+): Promise<[ResolvedConfig, string | null]> {
   if (!configPath) {
     configPath = await findConfigFile(indir);
   }
 
   if (!configPath) {
-    return [{}, null];
+    return [defaultConfig, null];
   }
 
   const configFile = Bun.file(configPath);
   const configFileType = configPath[configPath.length - 1]!;
 
+  let config: ResolvedConfig = defaultConfig;
+
   try {
     switch (configFileType) {
       case "5":
         // @ts-expect-error
-        return [JSON5.parse(await configFile.text()), configPath];
+        config = { ...config, ...JSON5.parse(await configFile.text()) };
+        break;
       case "c":
         // @ts-expect-error
-        return [JSONC.parse(await configFile.text()), configPath];
+        config = { ...config, ...JSONC.parse(await configFile.text()) };
+        break;
       default:
-        return [await configFile.json(), configPath];
+        config = { ...config, ...(await configFile.json()) };
+        break;
     }
   } catch (error) {
     if (
@@ -89,4 +104,6 @@ export async function loadConfig(
     console.error(`Error parsing config file ${configFile.name}:`, error);
     process.exit(1);
   }
+
+  return [config, configPath];
 }

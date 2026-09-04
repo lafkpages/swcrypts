@@ -5,6 +5,7 @@ import wrapperHtml from "./wrapper/index.html?raw";
 import swJs from "./wrapper/sw/index.ts?raw";
 
 export interface WrapperOptions {
+  basePath: string;
   cryptoCheck: Uint8Array;
   salt: string;
 
@@ -50,14 +51,22 @@ const defaultWrapperOptions = {
 export function getWrapperHtml(options: WrapperOptions) {
   const resolvedOptions = { ...defaultWrapperOptions, ...options };
 
-  let html = wrapperHtml
-    .replace(
-      /"{{CRYPTOCHECK}}"/g,
-      JSON.stringify(resolvedOptions.cryptoCheck.toBase64()),
-    )
-    .replace(/"{{SALT}}"/g, JSON.stringify(resolvedOptions.salt))
-    .replace(/{{TITLE}}/g, resolvedOptions.title)
-    .replace(/{{MESSAGE}}/g, resolvedOptions.message);
+  if (!resolvedOptions.basePath.startsWith("/")) {
+    throw new Error("basePath must start with a forward slash");
+  }
+
+  if (
+    resolvedOptions.basePath.length > 1 &&
+    resolvedOptions.basePath[1] === "/"
+  ) {
+    throw new Error("basePath must not start with a double forward slash");
+  }
+
+  const basePath = resolvedOptions.basePath.endsWith("/")
+    ? resolvedOptions.basePath
+    : `${resolvedOptions.basePath}/`;
+
+  let html = wrapperHtml;
 
   if (resolvedOptions.customStyles) {
     html = html.replace("</style>", `${resolvedOptions.customStyles}</style>`);
@@ -67,7 +76,15 @@ export function getWrapperHtml(options: WrapperOptions) {
     html = html.replace(/<aside>.+?<\/aside>/is, "");
   }
 
-  return html;
+  return html
+    .replace(/"{{BASEPATH}}"/g, JSON.stringify(basePath))
+    .replace(
+      /"{{CRYPTOCHECK}}"/g,
+      JSON.stringify(resolvedOptions.cryptoCheck.toBase64()),
+    )
+    .replace(/"{{SALT}}"/g, JSON.stringify(resolvedOptions.salt))
+    .replace(/{{TITLE}}/g, resolvedOptions.title)
+    .replace(/{{MESSAGE}}/g, resolvedOptions.message);
 }
 
 export function getServiceWorkerJs() {

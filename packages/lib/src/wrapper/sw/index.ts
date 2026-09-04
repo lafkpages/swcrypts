@@ -28,6 +28,11 @@ const enum FileTypeDirective {
 
 const CURRENT_PAYLOAD_VERSION: PayloadVersion = { major: 1, minor: 0 };
 
+const currentScope = new URL(self.registration.scope);
+const currentServiceWorkerUrlJson = JSON.stringify(
+  new URL(serviceWorkerFileName, self.registration.scope).pathname,
+);
+
 let hashedPassword: string | null = null;
 let filePathsKey: CryptoKey | null = null;
 
@@ -48,7 +53,10 @@ self.addEventListener("activate", (e) => {
 self.addEventListener("fetch", (e) => {
   const url = new URL(e.request.url);
 
-  if (url.origin === location.origin) {
+  if (
+    url.origin === currentScope.origin &&
+    url.pathname.startsWith(currentScope.pathname)
+  ) {
     console.debug(
       "SwCrypts service worker intercepting fetch for",
       e.request.url,
@@ -73,7 +81,7 @@ self.addEventListener("fetch", (e) => {
 
 async function getAndDeriveKeys() {
   if (!hashedPassword) {
-    hashedPassword = await getPasswordFromCache();
+    hashedPassword = await getPasswordFromCache(currentScope.pathname);
   }
 
   if (!hashedPassword) {
@@ -190,7 +198,7 @@ async function fetchEntryPoint(url: URL, request: Request) {
   }
 
   return new Response(
-    `${decodedPage}<script${nonceAttr}>navigator.serviceWorker.register("/${serviceWorkerFileName}",{scope:"/"})</script>`,
+    `${decodedPage}<script${nonceAttr}>navigator.serviceWorker.register(${currentServiceWorkerUrlJson})</script>`,
     {
       status: resp.status,
       statusText: resp.statusText,
@@ -210,11 +218,12 @@ async function fetchAndDecrypt(
   }
 
   const url = new URL(request.url);
+  const relativePath = url.pathname.slice(currentScope.pathname.length);
 
   url.pathname =
-    "/" +
+    currentScope.pathname +
     (await encryptFilePath(
-      url.pathname.slice(1) + (url.pathname.endsWith("/") ? "index.html" : ""),
+      relativePath + (url.pathname.endsWith("/") ? "index.html" : ""),
       filePathsKey,
     ));
 
