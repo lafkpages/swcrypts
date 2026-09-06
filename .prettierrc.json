@@ -1,7 +1,15 @@
 {
-  "plugins": ["@ianvs/prettier-plugin-sort-imports"],
+  "plugins": ["prettier-plugin-astro", "@ianvs/prettier-plugin-sort-imports"],
+  "overrides": [
+    {
+      "files": "*.astro",
+      "options": {
+        "parser": "astro"
+      }
+    }
+  ],
 
-  "importOrderTypeScriptVersion": "6.0.3",
+  "importOrderTypeScriptVersion": "7.0.2",
   "importOrderParserPlugins": ["typescript"],
   "importOrder": [
     "<TYPES>",

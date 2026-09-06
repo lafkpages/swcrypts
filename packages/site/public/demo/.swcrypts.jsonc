@@ -1,5 +1,8 @@
 {
   "$schema": "https://raw.githubusercontent.com/lafkpages/swcrypts/main/packages/cli/config.schema.json",
+
+  "basePath": "/demo",
+
   "salt": "3851133c74f21f6468814856a5a7349d",
   "password": "Hi",
 }

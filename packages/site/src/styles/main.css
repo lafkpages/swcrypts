@@ -103,6 +103,11 @@ a:hover {
   text-decoration: none;
 }
 
+.site-nav a.active {
+  color: var(--fg);
+  font-weight: 500;
+}
+
 .menu-toggle {
   display: none;
   background: none;

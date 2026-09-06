@@ -1,0 +1,102 @@
+---
+import "../styles/main.css";
+
+interface Props {
+  title: string;
+}
+const { title } = Astro.props;
+
+const { pathname } = Astro.url;
+const navLinks = [
+  ["/", "Home"],
+  ["/features/", "Features"],
+  ["/security/", "Security"],
+  ["/status/", "Status"],
+  ["/demo/", "Demo"],
+];
+const isActive = (href: string) =>
+  href === "/" ? pathname === "/" : pathname.startsWith(href);
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>{title}</title>
+  </head>
+  <body>
+    <header class="site-header">
+      <div class="container">
+        <a href="/" class="logo">SwCrypts</a>
+        <button
+          class="menu-toggle"
+          aria-label="Toggle menu"
+          aria-expanded="false"
+        >
+          ☰
+        </button>
+        <nav class="site-nav">
+          {
+            navLinks.map(([href, label]) => (
+              <a
+                href={href}
+                class:list={["nav-link", { active: isActive(href) }]}
+              >
+                {label}
+              </a>
+            ))
+          }
+        </nav>
+      </div>
+    </header>
+
+    <main class="container">
+      <slot />
+    </main>
+
+    <footer class="site-footer">
+      <div class="container">
+        <p>
+          Encrypted with&nbsp;
+          <a href="https://github.com/lafkpages/swcrypts" target="_blank">
+            SwCrypts
+          </a>. Password was <code>Hi</code> — but do not use that in production.
+        </p>
+      </div>
+    </footer>
+
+    <script>
+      const toggle = document.querySelector(".menu-toggle");
+      const nav = document.querySelector(".site-nav");
+      toggle?.addEventListener("click", () => {
+        const open = nav?.classList.toggle("open");
+        toggle.setAttribute("aria-expanded", String(!!open));
+      });
+
+      document.querySelectorAll(".copy-btn").forEach((btn) => {
+        btn.addEventListener("click", async () => {
+          const pre = btn.closest(".code-block")?.querySelector("pre");
+          if (!pre) return;
+          const reset = (label: string) => {
+            btn.textContent = label;
+            btn.setAttribute(
+              "aria-label",
+              label === "Copy" ? "Copy to clipboard" : label,
+            );
+            setTimeout(() => {
+              btn.textContent = "Copy";
+              btn.setAttribute("aria-label", "Copy to clipboard");
+            }, 1500);
+          };
+          try {
+            await navigator.clipboard.writeText(pre.textContent || "");
+            reset("Copied");
+          } catch {
+            reset("Failed");
+          }
+        });
+      });
+    </script>
+  </body>
+</html>

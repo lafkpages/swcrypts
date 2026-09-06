@@ -39,7 +39,10 @@ Bun workspace monorepo (`packages/*`):
 - `packages/cli` — the `swcrypts` CLI (built on `@bunli/core`, options validated
   with `zod`). `commands/build.ts` is the encrypt command; `config.ts` loads the
   user config (`.swcrypts.json` / `.json5` / `.jsonc`).
-- `site/` — SwCrypts' own static site; `site-enc/` is gitignored build output.
+- `packages/site` — SwCrypts' own static site, built with **Astro**. It is
+  intentionally **public/unencrypted**; only `src/pages` content referenced by
+  the deploy workflow's demo path is encrypted (see "Demo encryption" below).
+  `packages/site/dist/` is gitignored build output.
 
 ## Tooling
 
@@ -47,8 +50,9 @@ Bun workspace monorepo (`packages/*`):
   Do not add npm/pnpm/yarn lockfiles.
 - **TypeScript** (peer `typescript@^7`), strict mode, bundler resolution,
   `verbatimModuleSyntax`, `noUncheckedIndexedAccess`.
-- **Prettier** with `@ianvs/prettier-plugin-sort-imports` (import order is
-  enforced — run the formatter, don't hand-sort).
+- **Prettier** with `@ianvs/prettier-plugin-sort-imports` and
+  `prettier-plugin-astro` (import order is enforced — run the formatter, don't
+  hand-sort).
 - **Valibot** for runtime schema validation in the lib; **Zod** for CLI option
   validation. Match whichever the surrounding package already uses.
 
@@ -76,12 +80,30 @@ bun test --cwd packages/lib
 bun run --cwd packages/cli build
 bun test --cwd packages/cli
 
-# Run the CLI against SwCrypts' own static site
-bun run build:site
+# Site (Astro): dev server / production build to packages/site/dist
+bun run --cwd packages/site dev
+bun run --cwd packages/site build
 ```
 
 CI (`.github/workflows/test.yml`) runs exactly: build lib → test lib → build CLI
 → test CLI. Mirror that ordering locally when reproducing CI.
+
+Deployment (`.github/workflows/deploy.yml`) builds the site, encrypts the demo
+section with the CLI, and deploys to GitHub Pages.
+
+## Demo encryption
+
+The marketing site is public; only the `demo` section is encrypted. The deploy
+workflow does this inline: it builds the Astro site, runs the CLI over
+`packages/site/dist/demo` into a temp dir, swaps the plain `demo` directory for
+the encrypted one, and uploads `packages/site/dist` as the Pages artifact.
+`packages/site/public/demo/.swcrypts.jsonc` holds the demo config (demo
+password + salt). It deliberately lives under `public/demo/` so Astro copies it
+into `dist/demo/`, where the CLI's config search (upward from the input dir)
+finds it; the CLI filters dotfiles, so it is never deployed. Mixed
+public/encrypted deployments are a known rough edge — the CLI currently
+encrypts a whole input directory, and the wrapper/service worker assume one
+deployment root.
 
 If you change the CLI config shape in `packages/cli/config.ts`, regenerate the
 JSON schema: `bun run --cwd packages/cli build:schema`. This resolves
@@ -114,7 +136,7 @@ payload (plaintext, before encryption):
   byte  0        payload major version   (currently 1)
   byte  1        payload minor version   (currently 0)
   bytes 2..5     uint32 metadata length
-  bytes 6..      UTF-8 JSON metadata      ({ "mimeType": string })
+  bytes 6..      UTF-8 JSON metadata     ({ "mimeType": string })
   then           raw file content
 ```
 
@@ -165,5 +187,5 @@ service workers must keep working or self-heal.
   naming affects already-deployed sites and cached service workers — treat as
   breaking and preserve forward/backward compatibility per the versioning
   contract.
-- `site-enc/` and `packages/lib/README.md` are generated/gitignored — don't
-  commit them.
+- `packages/site/dist/` and `packages/lib/README.md` are generated/gitignored —
+  don't commit them.

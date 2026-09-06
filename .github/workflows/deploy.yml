@@ -6,7 +6,7 @@ on:
     paths:
       - "packages/lib/**"
       - "packages/cli/**"
-      - "site/**"
+      - "packages/site/**"
       - ".github/workflows/deploy.yml"
       - "package.json"
       - "bun.lock"
@@ -45,19 +45,28 @@ jobs:
       - name: Install dependencies
         run: bun install --frozen-lockfile
 
-      - name: Build wrapper
+      - name: Build site
+        run: bun run --cwd packages/site -b build
+
+      - name: Build SwCrypts lib
         run: bun run --cwd packages/lib build
 
-      - name: Build CLI
+      - name: Build SwCrypts CLI
         run: bun run --cwd packages/cli build
 
-      - name: Encrypt site
-        run: bun run --cwd packages/cli . build -i ../../site -o ../../site-enc
+      - name: Encrypt demo part of site
+        run: |
+          bun run --cwd packages/cli . build \
+            -i ../site/dist/demo \
+            -o ../site/dist-enc/demo
+          rm -rf packages/site/dist/demo
+          mv packages/site/dist-enc/demo packages/site/dist/demo
+          rm -rf packages/site/dist-enc
 
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: site-enc
+          path: packages/site/dist
 
   deploy:
     needs: build
