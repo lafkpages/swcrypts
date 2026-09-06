@@ -57,7 +57,7 @@ export const defaultConfig = {
 export type ResolvedConfig = SwCryptsConfig &
   Required<Pick<SwCryptsConfig, keyof typeof defaultConfig>>;
 
-// TODO: use Valibot or Zod to actually validate config
+// TODO: use Valibot to actually validate config
 
 export async function loadConfig(
   configPath?: string | null,

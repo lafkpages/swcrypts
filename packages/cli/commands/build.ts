@@ -2,7 +2,7 @@ import { readdir, rm } from "node:fs/promises";
 import { join, relative, resolve } from "node:path";
 
 import { defineCommand, option } from "@bunli/core";
-import { z } from "zod";
+import { optional, string } from "valibot";
 
 import { serviceWorkerFileName } from "@swcrypts/core/constants";
 import { deriveFilePathsKey, hashPassword } from "@swcrypts/core/crypto";
@@ -20,26 +20,26 @@ export default defineCommand({
   name: "build" as const,
   description: "Build and encrypt assets for deployment",
   options: {
-    indir: option(z.string(), {
+    indir: option(string(), {
       short: "i",
       description: "Input directory containing static site to encrypt.",
     }),
-    outdir: option(z.string(), {
+    outdir: option(string(), {
       short: "o",
       description: "Output directory for encrypted site.",
     }),
 
-    config: option(z.string().optional(), {
+    config: option(optional(string()), {
       short: "c",
       description:
         "Path to config file. If not provided, the CLI will look for a config file in the input directory and CWD.",
     }),
-    password: option(z.string().optional(), {
+    password: option(optional(string()), {
       short: "p",
       description:
         "Password for encryption. Be careful with this option as it may expose your password in command history.",
     }),
-    salt: option(z.string().optional(), { short: "s" }),
+    salt: option(optional(string()), { short: "s" }),
   },
   handler: async ({ flags, prompt }) => {
     const [config, configPath] = await loadConfig(flags.config, flags.indir);

@@ -19,12 +19,12 @@
       "dependencies": {
         "@bunli/core": "^0.9.1",
         "@swcrypts/core": "workspace:",
-        "zod": "^4.5.4",
       },
       "devDependencies": {
         "@types/bun": "catalog:",
         "bunli": "^0.9.1",
         "ts-json-schema-generator": "^2.9.0",
+        "valibot": "^1.4.2",
       },
     },
     "packages/lib": {

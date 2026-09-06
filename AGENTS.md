@@ -37,7 +37,7 @@ Bun workspace monorepo (`packages/*`):
     These are bundled to raw strings and re-exported from `src/wrapper.ts`.
   - `scripts/build.ts` — the library build (see below).
 - `packages/cli` — the `swcrypts` CLI (built on `@bunli/core`, options validated
-  with `zod`). `commands/build.ts` is the encrypt command; `config.ts` loads the
+  with `valibot`). `commands/build.ts` is the encrypt command; `config.ts` loads the
   user config (`.swcrypts.json` / `.json5` / `.jsonc`).
 - `packages/site` — SwCrypts' own static site, built with **Astro**. It is
   intentionally **public/unencrypted**; only `src/pages` content referenced by
@@ -53,8 +53,9 @@ Bun workspace monorepo (`packages/*`):
 - **Prettier** with `@ianvs/prettier-plugin-sort-imports` and
   `prettier-plugin-astro` (import order is enforced — run the formatter, don't
   hand-sort).
-- **Valibot** for runtime schema validation in the lib; **Zod** for CLI option
-  validation. Match whichever the surrounding package already uses.
+- **Valibot** for runtime schema validation in both the lib and the CLI (Bunli
+  accepts any Standard Schema-compatible validator). Match the surrounding
+  package if it ever differs.
 
 ## Commands
 
@@ -172,7 +173,7 @@ service workers must keep working or self-heal.
   `test(lib):`, `build:`, …). Use `!` and a `BREAKING CHANGE:` trailer for
   changes to package exports, the payload format, or debug response headers.
 - Keep changes minimal and consistent with the surrounding package. Reuse the
-  validation library already used there (Valibot in lib, Zod in CLI).
+  validation library already used there (Valibot in lib and CLI).
 - Don't hand-format imports; Prettier's import-order plugin owns that.
 - Error handling in the service worker degrades gracefully to a controlled error
   response (with `X-SwCrypts-*` debug headers) rather than rejecting the fetch —
