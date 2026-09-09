@@ -5,38 +5,33 @@ import { describe, expect, test } from "bun:test";
 import { generateRandomSalt, isValidSalt } from "../dist/crypto/salt";
 
 describe("generateRandomSalt", () => {
-  test("returns a 32-character lowercase hex string", () => {
+  test("returns a 16-byte salt", () => {
     const salt = generateRandomSalt();
-    expect(salt).toMatch(/^[0-9a-f]{32}$/);
+    expect(salt).toBeInstanceOf(Uint8Array);
+    expect(salt).toHaveLength(16);
   });
 
   test("returns different values on subsequent calls", () => {
     const salt1 = generateRandomSalt();
     const salt2 = generateRandomSalt();
-    expect(salt1).not.toBe(salt2);
+    expect(salt1).not.toEqual(salt2);
   });
 });
 
 describe("isValidSalt", () => {
   test("accepts valid 32-character hex strings", () => {
-    expect(isValidSalt("0123456789abcdef0123456789abcdef")).toBe(true);
-    expect(isValidSalt("abcdefABCDEF0123456789abcdef0123")).toBe(true);
-    expect(isValidSalt("00000000000000000000000000000000")).toBe(true);
-    expect(isValidSalt("ffffffffffffffffffffffffffffffff")).toBe(true);
+    expect(isValidSalt(Uint8Array.fromHex("0123456789abcdef0123456789abcdef"))).toBe(true);
+    expect(isValidSalt(Uint8Array.fromHex("abcdefABCDEF0123456789abcdef0123"))).toBe(true);
+    expect(isValidSalt(Uint8Array.fromHex("00000000000000000000000000000000"))).toBe(true);
+    expect(isValidSalt(Uint8Array.fromHex("ffffffffffffffffffffffffffffffff"))).toBe(true);
   });
 
   test("rejects salts that are too short", () => {
-    expect(isValidSalt("0123456789abcdef0123456789abcde")).toBe(false);
-    expect(isValidSalt("")).toBe(false);
+    expect(isValidSalt(Uint8Array.fromHex("0123456789abcdef0123456789abcd"))).toBe(false);
+    expect(isValidSalt(Uint8Array.fromHex(""))).toBe(false);
   });
 
   test("rejects salts that are too long", () => {
-    expect(isValidSalt("0123456789abcdef0123456789abcdef0")).toBe(false);
-  });
-
-  test("rejects salts with non-hex characters", () => {
-    expect(isValidSalt("gggggggggggggggggggggggggggggggg")).toBe(false);
-    expect(isValidSalt("0123456789abcdef0123456789abcdeg")).toBe(false);
-    expect(isValidSalt("0123456789abcdef 0123456789abcdef")).toBe(false);
+    expect(isValidSalt(Uint8Array.fromHex("0123456789abcdef0123456789abcdef01"))).toBe(false);
   });
 });

@@ -1,11 +1,5 @@
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
-import {
-  mkdirSync,
-  mkdtempSync,
-  readdirSync,
-  rmSync,
-  writeFileSync,
-} from "node:fs";
+import { mkdirSync, mkdtempSync, readdirSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
@@ -61,9 +55,7 @@ describe("build command", () => {
     expect(indexHtml).not.toInclude("<h1>Hello</h1>");
 
     // Service worker should exist
-    expect(await Bun.file(join(outputDir, "__swcrypts_sw.js")).exists()).toBe(
-      true,
-    );
+    expect(await Bun.file(join(outputDir, "__swcrypts_sw.js")).exists()).toBe(true);
 
     // Every input file should have a corresponding .swcrypts.enc file
     const allFiles = readdirSync(outputDir);

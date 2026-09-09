@@ -7,7 +7,7 @@ import swJs from "./wrapper/sw/index.ts?raw";
 export interface WrapperOptions {
   basePath: string;
   cryptoCheck: Uint8Array;
-  salt: string;
+  salt: Uint8Array;
 
   /**
    * Custom CSS rules to override the default styling of SwCrypts' password
@@ -55,10 +55,7 @@ export function getWrapperHtml(options: WrapperOptions) {
     throw new Error("basePath must start with a forward slash");
   }
 
-  if (
-    resolvedOptions.basePath.length > 1 &&
-    resolvedOptions.basePath[1] === "/"
-  ) {
+  if (resolvedOptions.basePath.length > 1 && resolvedOptions.basePath[1] === "/") {
     throw new Error("basePath must not start with a double forward slash");
   }
 
@@ -78,11 +75,8 @@ export function getWrapperHtml(options: WrapperOptions) {
 
   return html
     .replace(/"{{BASEPATH}}"/g, JSON.stringify(basePath))
-    .replace(
-      /"{{CRYPTOCHECK}}"/g,
-      JSON.stringify(resolvedOptions.cryptoCheck.toBase64()),
-    )
-    .replace(/"{{SALT}}"/g, JSON.stringify(resolvedOptions.salt))
+    .replace(/"{{CRYPTOCHECK}}"/g, JSON.stringify(resolvedOptions.cryptoCheck.toBase64()))
+    .replace(/"{{SALT}}"/g, JSON.stringify(resolvedOptions.salt.toBase64()))
     .replace(/{{TITLE}}/g, resolvedOptions.title)
     .replace(/{{MESSAGE}}/g, resolvedOptions.message);
 }
@@ -91,9 +85,6 @@ export function getServiceWorkerJs() {
   return swJs;
 }
 
-export async function generateCryptoCheck(hashedPassword: string) {
-  return await encryptData(
-    crypto.getRandomValues(new Uint8Array(64)),
-    hashedPassword,
-  );
+export async function generateCryptoCheck(hashedPassword: Uint8Array<ArrayBuffer>) {
+  return await encryptData(crypto.getRandomValues(new Uint8Array(64)), hashedPassword);
 }

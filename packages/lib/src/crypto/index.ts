@@ -4,7 +4,7 @@ type EncryptionData = Parameters<typeof crypto.subtle.encrypt>[2];
 
 export async function encryptData(
   data: string | EncryptionData,
-  hashedPassword: string,
+  hashedPassword: Uint8Array<ArrayBuffer>,
 ) {
   if (typeof data === "string") {
     data = encoder.encode(data);
@@ -18,13 +18,7 @@ export async function encryptData(
         name: "AES-GCM",
         iv,
       },
-      await crypto.subtle.importKey(
-        "raw",
-        Uint8Array.fromHex(hashedPassword),
-        "AES-GCM",
-        false,
-        ["encrypt"],
-      ),
+      await crypto.subtle.importKey("raw", hashedPassword, "AES-GCM", false, ["encrypt"]),
       data,
     ),
   );
@@ -37,56 +31,40 @@ export async function encryptData(
 
 export async function decryptData(
   encryptedData: Uint8Array<ArrayBuffer>,
-  hashedPassword: string,
+  hashedPassword: Uint8Array<ArrayBuffer>,
 ) {
   return await crypto.subtle.decrypt(
     {
       name: "AES-GCM",
       iv: encryptedData.subarray(0, 12),
     },
-    await crypto.subtle.importKey(
-      "raw",
-      Uint8Array.fromHex(hashedPassword),
-      "AES-GCM",
-      false,
-      ["decrypt"],
-    ),
+    await crypto.subtle.importKey("raw", hashedPassword, "AES-GCM", false, ["decrypt"]),
     encryptedData.subarray(12),
   );
 }
 
-export async function hashPassword(password: string, salt: string) {
+export async function hashPassword(password: string, salt: Uint8Array<ArrayBuffer>) {
   return new Uint8Array(
     await crypto.subtle.deriveBits(
       {
         name: "PBKDF2",
         hash: "SHA-256",
         iterations: 600_000,
-        salt: encoder.encode(salt),
+        salt,
       },
-      await crypto.subtle.importKey(
-        "raw",
-        encoder.encode(password),
-        "PBKDF2",
-        false,
-        ["deriveBits"],
-      ),
+      await crypto.subtle.importKey("raw", encoder.encode(password), "PBKDF2", false, [
+        "deriveBits",
+      ]),
       256,
     ),
-  ).toHex();
+  );
 }
 
 /**
  * Needed for {@link encryptFilePath}.
  */
-export async function deriveFilePathsKey(hashedPassword: string) {
-  const master = await crypto.subtle.importKey(
-    "raw",
-    Uint8Array.fromHex(hashedPassword),
-    "HKDF",
-    false,
-    ["deriveKey"],
-  );
+export async function deriveFilePathsKey(hashedPassword: Uint8Array<ArrayBuffer>) {
+  const master = await crypto.subtle.importKey("raw", hashedPassword, "HKDF", false, ["deriveKey"]);
 
   return crypto.subtle.deriveKey(
     {
@@ -105,10 +83,7 @@ export async function deriveFilePathsKey(hashedPassword: string) {
 /**
  * @param filePathsKey The key used to encrypt the file path with, derived via {@link deriveFilePathsKey}.
  */
-export async function encryptFilePath(
-  filePath: string,
-  filePathsKey: CryptoKey,
-) {
+export async function encryptFilePath(filePath: string, filePathsKey: CryptoKey) {
   return (
     new Uint8Array(
       await crypto.subtle.sign("HMAC", filePathsKey, encoder.encode(filePath)),

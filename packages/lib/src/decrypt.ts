@@ -4,7 +4,7 @@ import { decryptData } from "./crypto";
 
 export async function decryptFile(
   encryptedData: Uint8Array<ArrayBuffer>,
-  hashedPassword: string,
+  hashedPassword: Uint8Array<ArrayBuffer>,
 ) {
   const payload = await decryptData(encryptedData, hashedPassword);
 

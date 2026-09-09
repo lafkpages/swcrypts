@@ -12,9 +12,7 @@ function generateNonce() {
  * already allows inline via 'unsafe-inline' without nonces/hashes that
  * would suppress it).
  */
-export function patchCspForInlineScript(
-  csp: string,
-): { nonce: string; csp: string } | null {
+export function patchCspForInlineScript(csp: string): { nonce: string; csp: string } | null {
   const directives = csp
     .split(";")
     .map((d) => d.trim())

@@ -14,8 +14,7 @@ const navLinks = [
   ["/status/", "Status"],
   ["/demo/", "Demo"],
 ];
-const isActive = (href: string) =>
-  href === "/" ? pathname === "/" : pathname.startsWith(href);
+const isActive = (href: string) => (href === "/" ? pathname === "/" : pathname.startsWith(href));
 ---
 
 <!doctype html>
@@ -29,20 +28,11 @@ const isActive = (href: string) =>
     <header class="site-header">
       <div class="container">
         <a href="/" class="logo">SwCrypts</a>
-        <button
-          class="menu-toggle"
-          aria-label="Toggle menu"
-          aria-expanded="false"
-        >
-          ☰
-        </button>
+        <button class="menu-toggle" aria-label="Toggle menu" aria-expanded="false"> ☰ </button>
         <nav class="site-nav">
           {
             navLinks.map(([href, label]) => (
-              <a
-                href={href}
-                class:list={["nav-link", { active: isActive(href) }]}
-              >
+              <a href={href} class:list={["nav-link", { active: isActive(href) }]}>
                 {label}
               </a>
             ))
@@ -59,9 +49,8 @@ const isActive = (href: string) =>
       <div class="container">
         <p>
           Encrypted with&nbsp;
-          <a href="https://github.com/lafkpages/swcrypts" target="_blank">
-            SwCrypts
-          </a>. Password was <code>Hi</code> — but do not use that in production.
+          <a href="https://github.com/lafkpages/swcrypts" target="_blank"> SwCrypts </a>. Password
+          was <code>Hi</code> — but do not use that in production.
         </p>
       </div>
     </footer>
@@ -80,10 +69,7 @@ const isActive = (href: string) =>
           if (!pre) return;
           const reset = (label: string) => {
             btn.textContent = label;
-            btn.setAttribute(
-              "aria-label",
-              label === "Copy" ? "Copy to clipboard" : label,
-            );
+            btn.setAttribute("aria-label", label === "Copy" ? "Copy to clipboard" : label);
             setTimeout(() => {
               btn.textContent = "Copy";
               btn.setAttribute("aria-label", "Copy to clipboard");

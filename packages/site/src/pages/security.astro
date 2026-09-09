@@ -5,8 +5,7 @@ import Base from "../layouts/Base.astro";
 <Base title="Security · SwCrypts">
   <h1>Security</h1>
   <p class="lead">
-    SwCrypts uses modern, battle-tested cryptography. Here is exactly how it
-    works.
+    SwCrypts uses modern, battle-tested cryptography. Here is exactly how it works.
   </p>
 
   <section>
@@ -17,8 +16,8 @@ import Base from "../layouts/Base.astro";
         <strong>Key derivation:</strong> PBKDF2-HMAC-SHA256 with 600,000 iterations
       </li>
       <li>
-        <strong>Salt:</strong> 16-byte random, persisted across rebuilds so returning
-        visitors are not prompted again
+        <strong>Salt:</strong> 16-byte random, persisted across rebuilds so returning visitors are not
+        prompted again
       </li>
     </ul>
   </section>
@@ -26,17 +25,16 @@ import Base from "../layouts/Base.astro";
   <section>
     <h2>Post-quantum safety</h2>
     <p>
-      SwCrypts uses only symmetric primitives. There is no RSA, ECDH, or other
-      public-key crypto for Shor's algorithm to break. Grover's algorithm halves
-      the effective security level:
+      SwCrypts uses only symmetric primitives. There is no RSA, ECDH, or other public-key crypto for
+      Shor's algorithm to break. Grover's algorithm halves the effective security level:
     </p>
     <ul>
       <li>AES-256 → ~128-bit post-quantum security</li>
       <li>SHA-256 → ~128-bit post-quantum preimage resistance</li>
     </ul>
     <p>
-      To preserve the full margin, your password must carry at least ~128 bits
-      of entropy after accounting for Grover's speedup.
+      To preserve the full margin, your password must carry at least ~128 bits of entropy after
+      accounting for Grover's speedup.
     </p>
   </section>
 

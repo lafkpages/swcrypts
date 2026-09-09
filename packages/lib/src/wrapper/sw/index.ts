@@ -33,7 +33,7 @@ const currentServiceWorkerUrlJson = JSON.stringify(
   new URL(serviceWorkerFileName, self.registration.scope).pathname,
 );
 
-let hashedPassword: string | null = null;
+let hashedPassword: Uint8Array<ArrayBuffer> | null = null;
 let filePathsKey: CryptoKey | null = null;
 
 let updateRequested = false;
@@ -53,15 +53,8 @@ self.addEventListener("activate", (e) => {
 self.addEventListener("fetch", (e) => {
   const url = new URL(e.request.url);
 
-  if (
-    url.origin === currentScope.origin &&
-    url.pathname.startsWith(currentScope.pathname)
-  ) {
-    console.debug(
-      "SwCrypts service worker intercepting fetch for",
-      e.request.url,
-      e.request,
-    );
+  if (url.origin === currentScope.origin && url.pathname.startsWith(currentScope.pathname)) {
+    console.debug("SwCrypts service worker intercepting fetch for", e.request.url, e.request);
 
     if (e.request.mode === "navigate") {
       e.respondWith(fetchEntryPoint(url, e.request));
@@ -73,9 +66,7 @@ self.addEventListener("fetch", (e) => {
   }
 
   e.respondWith(
-    fetch(e.request).then((resp) =>
-      cloneResponseInjectHeaders(resp, FileTypeDirective.None, null),
-    ),
+    fetch(e.request).then((resp) => cloneResponseInjectHeaders(resp, FileTypeDirective.None, null)),
   );
 });
 
@@ -111,10 +102,7 @@ function requestServiceWorkerUpdate(newPayloadVersion: PayloadVersion) {
 }
 
 async function fetchAsset(url: URL, request: Request) {
-  console.debug(
-    "SwCrypts service worker intercepting fetch for asset",
-    url.pathname,
-  );
+  console.debug("SwCrypts service worker intercepting fetch for asset", url.pathname);
 
   if (!(await getAndDeriveKeys())) {
     return new Response("Unauthorized SwCrypts", {
@@ -125,25 +113,17 @@ async function fetchAsset(url: URL, request: Request) {
     });
   }
 
-  const [, resp, payloadVersion, decryptedMetadata, decryptedData] =
-    await fetchAndDecrypt(request);
+  const [, resp, payloadVersion, decryptedMetadata, decryptedData] = await fetchAndDecrypt(request);
 
   if (!resp.ok || !decryptedMetadata) {
-    return cloneResponseInjectHeaders(
-      resp,
-      FileTypeDirective.AssetError,
-      payloadVersion,
-    );
+    return cloneResponseInjectHeaders(resp, FileTypeDirective.AssetError, payloadVersion);
   }
 
   const headers = new Headers(resp.headers);
   headers.set("Content-Type", decryptedMetadata.mimeType);
   headers.set("X-Content-Type-Options", "nosniff");
   headers.set(swCryptsFileTypeHeader, FileTypeDirective.Asset);
-  headers.set(
-    swCryptsPayloadVersionHeader,
-    payloadVersionToDebugString(payloadVersion),
-  );
+  headers.set(swCryptsPayloadVersionHeader, payloadVersionToDebugString(payloadVersion));
 
   return new Response(decryptedData, {
     status: resp.status,
@@ -153,10 +133,7 @@ async function fetchAsset(url: URL, request: Request) {
 }
 
 async function fetchEntryPoint(url: URL, request: Request) {
-  console.debug(
-    "SwCrypts service worker intercepting fetch for entrypoint",
-    url.pathname,
-  );
+  console.debug("SwCrypts service worker intercepting fetch for entrypoint", url.pathname);
 
   if (!(await getAndDeriveKeys())) {
     return cloneResponseInjectHeaders(
@@ -166,15 +143,10 @@ async function fetchEntryPoint(url: URL, request: Request) {
     );
   }
 
-  const [, resp, payloadVersion, decryptedMetadata, decryptedPage] =
-    await fetchAndDecrypt(request);
+  const [, resp, payloadVersion, decryptedMetadata, decryptedPage] = await fetchAndDecrypt(request);
 
   if (!resp.ok || !decryptedMetadata) {
-    return cloneResponseInjectHeaders(
-      resp,
-      FileTypeDirective.EntrypointError,
-      payloadVersion,
-    );
+    return cloneResponseInjectHeaders(resp, FileTypeDirective.EntrypointError, payloadVersion);
   }
 
   const decodedPage = decoder.decode(decryptedPage);
@@ -182,10 +154,7 @@ async function fetchEntryPoint(url: URL, request: Request) {
   const headers = new Headers(resp.headers);
   headers.set("Content-Type", decryptedMetadata.mimeType);
   headers.set(swCryptsFileTypeHeader, FileTypeDirective.Entrypoint);
-  headers.set(
-    swCryptsPayloadVersionHeader,
-    payloadVersionToDebugString(payloadVersion),
-  );
+  headers.set(swCryptsPayloadVersionHeader, payloadVersionToDebugString(payloadVersion));
 
   const upstreamCsp = headers.get("Content-Security-Policy");
   let nonceAttr = "";
@@ -252,12 +221,10 @@ async function fetchAndDecrypt(
   }
 
   const encryptedData = await resp.bytes();
-  const decryptedFile = await decryptFile(encryptedData, hashedPassword).catch(
-    (err) => {
-      console.error("Error decrypting file:", err);
-      return null;
-    },
-  );
+  const decryptedFile = await decryptFile(encryptedData, hashedPassword).catch((err) => {
+    console.error("Error decrypting file:", err);
+    return null;
+  });
 
   if (!decryptedFile) {
     return [url, resp, null, null, null];
@@ -298,10 +265,7 @@ function cloneResponseInjectHeaders(
 
   headers.set(swCryptsFileTypeHeader, fileType);
   if (payloadVersion !== null) {
-    headers.set(
-      swCryptsPayloadVersionHeader,
-      payloadVersionToDebugString(payloadVersion),
-    );
+    headers.set(swCryptsPayloadVersionHeader, payloadVersionToDebugString(payloadVersion));
   }
 
   return new Response(resp.body, {

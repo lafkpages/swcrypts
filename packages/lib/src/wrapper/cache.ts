@@ -10,7 +10,7 @@ function getPasswordRequest(basePath: string) {
 
 export async function savePasswordInCache(
   basePath: string,
-  hashedPassword: string,
+  hashedPassword: Uint8Array<ArrayBuffer>,
 ) {
   const cache = await getCache();
   const passwordRequest = getPasswordRequest(basePath);
@@ -23,7 +23,7 @@ export async function getPasswordFromCache(basePath: string) {
   const response = await cache.match(passwordRequest);
 
   if (!response || !response.ok) return null;
-  return await response.text();
+  return await response.bytes();
 }
 
 export async function removeCache() {

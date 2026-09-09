@@ -11,18 +11,14 @@ describe("filterIgnoredFiles", () => {
   });
 
   test("filters hidden files and directories", () => {
-    expect(filterIgnoredFiles([".env", ".git/config", "file.txt"])).toEqual([
-      "file.txt",
+    expect(filterIgnoredFiles([".env", ".git/config", "file.txt"])).toEqual(["file.txt"]);
+    expect(filterIgnoredFiles(["assets/.hidden", "assets/normal.css"])).toEqual([
+      "assets/normal.css",
     ]);
-    expect(filterIgnoredFiles(["assets/.hidden", "assets/normal.css"])).toEqual(
-      ["assets/normal.css"],
-    );
   });
 
   test("filters system files", () => {
-    expect(filterIgnoredFiles([".DS_Store", "Thumbs.db", "photo.jpg"])).toEqual(
-      ["photo.jpg"],
-    );
+    expect(filterIgnoredFiles([".DS_Store", "Thumbs.db", "photo.jpg"])).toEqual(["photo.jpg"]);
   });
 
   test("filters nested system and hidden files", () => {
@@ -33,16 +29,13 @@ describe("filterIgnoredFiles", () => {
       "public/.gitignore",
       "public/favicon.ico",
     ];
-    expect(filterIgnoredFiles(input)).toEqual([
-      "public/index.html",
-      "public/favicon.ico",
-    ]);
+    expect(filterIgnoredFiles(input)).toEqual(["public/index.html", "public/favicon.ico"]);
   });
 
   test("handles Windows-style paths", () => {
-    expect(
-      filterIgnoredFiles(["public\\.DS_Store", "public\\index.html"]),
-    ).toEqual(["public\\index.html"]);
+    expect(filterIgnoredFiles(["public\\.DS_Store", "public\\index.html"])).toEqual([
+      "public\\index.html",
+    ]);
   });
 });
 

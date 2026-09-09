@@ -4,10 +4,7 @@ import { JSON5, JSONC } from "bun";
 import { readdir } from "node:fs/promises";
 import { join } from "node:path";
 
-export interface SwCryptsConfig extends Omit<
-  WrapperOptions,
-  "basePath" | "cryptoCheck" | "salt"
-> {
+export interface SwCryptsConfig extends Omit<WrapperOptions, "basePath" | "cryptoCheck" | "salt"> {
   $schema?: string;
 
   basePath?: string;
@@ -91,12 +88,7 @@ export async function loadConfig(
         break;
     }
   } catch (error) {
-    if (
-      error &&
-      typeof error === "object" &&
-      "code" in error &&
-      error.code === "ENOENT"
-    ) {
+    if (error && typeof error === "object" && "code" in error && error.code === "ENOENT") {
       console.error(`Config file not found: ${configFile.name}`);
       process.exit(1);
     }

@@ -5,7 +5,7 @@ import { buildFilePayload } from "./payloads";
 export async function encryptFile(
   file: Blob,
   relativeFilePath: string,
-  hashedPassword: string,
+  hashedPassword: Uint8Array<ArrayBuffer>,
   filePathsKey: CryptoKey,
 ) {
   const payload = buildFilePayload({ mimeType: file.type }, await file.bytes());

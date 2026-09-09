@@ -19,19 +19,16 @@ const wrapperHtmlBuild = await build({
 });
 
 // Minify the wrapper page's HTML
-const wrapperHtmlMinified = await process(
-  await wrapperHtmlBuild.outputs[0]!.text(),
-  {
-    collapseWhitespace: "aggressive",
+const wrapperHtmlMinified = await process(await wrapperHtmlBuild.outputs[0]!.text(), {
+  collapseWhitespace: "aggressive",
 
-    // CSS and JS are already minified by Bun
-    minifyCss: false,
-    minifyJs: false,
+  // CSS and JS are already minified by Bun
+  minifyCss: false,
+  minifyJs: false,
 
-    // SVGs are not used in the wrapper page
-    minifySvg: false,
-  },
-);
+  // SVGs are not used in the wrapper page
+  minifySvg: false,
+});
 
 // Build the service worker
 const swBuild = await build({

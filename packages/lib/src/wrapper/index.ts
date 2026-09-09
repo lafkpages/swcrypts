@@ -2,11 +2,7 @@
 
 import { serviceWorkerFileName } from "../constants";
 import { decryptData, hashPassword } from "../crypto";
-import {
-  getPasswordFromCache,
-  removeCache,
-  savePasswordInCache,
-} from "./cache";
+import { getPasswordFromCache, removeCache, savePasswordInCache } from "./cache";
 
 let failed = false;
 
@@ -21,6 +17,7 @@ const baseUrl = new URL("{{BASEPATH}}", location.origin);
 
 const cryptoCheck = Uint8Array.fromBase64("{{CRYPTOCHECK}}");
 const cryptoCheckExpectedLength = 64;
+const salt = Uint8Array.fromBase64("{{SALT}}");
 
 if (failed) {
   setupUi();
@@ -80,7 +77,7 @@ function setupUiOnDocumentLoad() {
     input.disabled = true;
     button.disabled = true;
 
-    const hashedPassword = await hashPassword(password, "{{SALT}}");
+    const hashedPassword = await hashPassword(password, salt);
     let decryptedCheck: ArrayBuffer | null = null;
 
     try {

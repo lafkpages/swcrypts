@@ -4,29 +4,23 @@ import type { WrapperOptions } from "../dist/wrapper";
 import { describe, expect, test } from "bun:test";
 
 import { decryptData, hashPassword } from "../dist/crypto";
-import {
-  generateCryptoCheck,
-  getServiceWorkerJs,
-  getWrapperHtml,
-} from "../dist/wrapper";
+import { generateCryptoCheck, getServiceWorkerJs, getWrapperHtml } from "../dist/wrapper";
 
 describe("getWrapperHtml", () => {
   const baseOptions: WrapperOptions = {
     basePath: "/",
     cryptoCheck: new Uint8Array([1, 2, 3, 4, 5]),
-    salt: "a".repeat(32),
+    salt: Uint8Array.fromHex("aa".repeat(16)),
   };
 
-  test("includes the salt in the output", () => {
+  test("includes the salt as base64 in the output", () => {
     const html = getWrapperHtml(baseOptions);
-    expect(html).toInclude(baseOptions.salt);
+    expect(html).toInclude(baseOptions.salt.toBase64());
   });
 
   test("includes the cryptoCheck as base64", () => {
     const html = getWrapperHtml(baseOptions);
-    expect(html).toInclude(
-      Buffer.from(baseOptions.cryptoCheck).toString("base64"),
-    );
+    expect(html).toInclude(Buffer.from(baseOptions.cryptoCheck).toString("base64"));
   });
 
   test("applies custom title and message", () => {
@@ -77,7 +71,7 @@ describe("getServiceWorkerJs", () => {
 
 describe("generateCryptoCheck", () => {
   test("produces data decryptable with the same hashed password", async () => {
-    const key = await hashPassword("test-password", "s".repeat(32));
+    const key = await hashPassword("test-password", Uint8Array.fromHex("aa".repeat(16)));
     const check = await generateCryptoCheck(key);
 
     // Should not throw — valid ciphertext for this key
@@ -86,8 +80,8 @@ describe("generateCryptoCheck", () => {
   });
 
   test("fails to decrypt with a different key", async () => {
-    const key1 = await hashPassword("password1", "s".repeat(32));
-    const key2 = await hashPassword("password2", "s".repeat(32));
+    const key1 = await hashPassword("password1", Uint8Array.fromHex("aa".repeat(16)));
+    const key2 = await hashPassword("password2", Uint8Array.fromHex("aa".repeat(16)));
     const check = await generateCryptoCheck(key1);
 
     expect(decryptData(check, key2)).rejects.toThrow();

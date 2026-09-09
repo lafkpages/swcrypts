@@ -15,15 +15,10 @@ export type FileMetadata = InferOutput<typeof FileMetadata>;
 const encoder = new TextEncoder();
 const decoder = new TextDecoder();
 
-export function buildFilePayload(
-  fileMetadata: FileMetadata,
-  fileData: Uint8Array,
-) {
+export function buildFilePayload(fileMetadata: FileMetadata, fileData: Uint8Array) {
   const encodedMetadata = encoder.encode(JSON.stringify(fileMetadata));
 
-  const payload = new DataView(
-    new ArrayBuffer(6 + encodedMetadata.length + fileData.length),
-  );
+  const payload = new DataView(new ArrayBuffer(6 + encodedMetadata.length + fileData.length));
   payload.setUint8(0, 1);
   payload.setUint8(1, 0);
   payload.setUint32(2, encodedMetadata.length);
