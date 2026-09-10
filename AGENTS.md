@@ -39,6 +39,18 @@ Bun workspace monorepo (`packages/*`):
 - `packages/cli` — the `swcrypts` CLI (built on `@bunli/core`, options validated
   with `valibot`). `commands/build.ts` is the encrypt command; `config.ts` loads the
   user config (`.swcrypts.json` / `.json5` / `.jsonc`).
+- `packages/rust` — a Cargo workspace (not a Bun workspace member; no
+  `package.json`) with a work-in-progress Rust port of the toolchain:
+  - `core/` — the `swcrypts-core` crate mirroring `@swcrypts/core` (crypto,
+    payload format, wrapper/SW generation). It embeds the TS-built wrapper page
+    and service worker from `packages/lib/dist-wrapper/` via `include_str!`, so
+    **the TS lib build must run before `cargo build`** (see Build details).
+  - `cli/` — a clap-based `swcrypts` CLI (`build` command; `config.rs` loads the
+    same `.swcrypts.json(c|5)` config).
+
+  The port is not yet at full parity with the TS CLI (known gaps are left as
+  code TODOs) — don't assume behavior matches without checking.
+
 - `packages/site` — SwCrypts' own static site, built with **Astro**. It is
   intentionally **public/unencrypted**; only `src/pages` content referenced by
   the deploy workflow's demo path is encrypted (see "Demo encryption" below).
@@ -56,6 +68,9 @@ Bun workspace monorepo (`packages/*`):
 - **Valibot** for runtime schema validation in both the lib and the CLI (Bunli
   accepts any Standard Schema-compatible validator). Match the surrounding
   package if it ever differs.
+- **Rust** for `packages/rust`: edition 2024. Note the CLI uses
+  `slice::as_array`, which needs Rust ≥ 1.93; there is no `rust-toolchain.toml`
+  yet, so CI relies on the runner's preinstalled stable toolchain.
 
 ## Commands
 
@@ -64,8 +79,8 @@ Install first: `bun install`
 > [!IMPORTANT]
 > The `@swcrypts/core` package exports resolve to `packages/lib/dist/*`, and the
 > lib tests import from `../dist/...`. **You must build the lib before running
-> either test suite or the CLI.** This is the most common cause of confusing
-> failures.
+> either test suite, the TS CLI, or the Rust workspace.** This is the most
+> common cause of confusing failures.
 
 ```sh
 # Format everything (also fixes import order)
@@ -84,10 +99,18 @@ bun test --cwd packages/cli
 # Site (Astro): dev server / production build to packages/site/dist
 bun run --cwd packages/site dev
 bun run --cwd packages/site build
+
+# Build the Rust workspace (needs the lib build above: dist-wrapper artifacts)
+cargo build --release --manifest-path packages/rust/Cargo.toml
 ```
 
 CI (`.github/workflows/test.yml`) runs exactly: build lib → test lib → build CLI
 → test CLI. Mirror that ordering locally when reproducing CI.
+
+`.github/workflows/build-rust.yml` additionally builds the Rust workspace on
+pushes to `main` and PRs. Because the crate embeds `packages/lib/dist-wrapper/`
+at compile time, this job runs the TS lib build first (setup-bun →
+`bun install` → lib build → `cargo build --release`).
 
 Deployment (`.github/workflows/deploy.yml`) builds the site, encrypts the demo
 section with the CLI, and deploys to GitHub Pages.
@@ -117,6 +140,15 @@ not enough.
 - `packages/lib/scripts/build.ts` bundles `src/wrapper/index.html` and
   `src/wrapper/sw/index.ts` with `Bun.build` (minified), inlines them as raw
   text into the library bundle, then runs `tsc` to emit declarations.
+- The same build script also writes the minified wrapper page and service
+  worker to `packages/lib/dist-wrapper/` (gitignored via `dist-*`). The Rust
+  crate embeds these files at compile time (`include_str!`), so they must exist
+  before `cargo build`. `--skip-wrapper` skips writing them — the lib bundle
+  still gets the fresh inlined strings, but `dist-wrapper/` is then stale, so
+  run a full build before building or releasing the Rust CLI.
+- The build script asserts exactly one build output for the wrapper page and
+  the service worker, failing fast instead of silently embedding `outputs[0]`
+  of an unexpected multi-output build.
 - Type generation needs a working `tsc` (Node-based). Pass `--skip-types` to the
   build script to skip declaration emit when you only need the JS bundles.
 - The main lib `tsconfig.json` **excludes** `src/wrapper/**` (it targets the DOM
@@ -182,11 +214,14 @@ service workers must keep working or self-heal.
 ## Gotchas
 
 - Build the lib before testing or running the CLI (see Commands).
+- Building `packages/rust` requires `packages/lib/dist-wrapper/` to exist — run
+  the TS lib build first (without `--skip-wrapper`), or `include_str!` fails to
+  compile.
 - Touching `src/wrapper/**`? Typecheck it with the wrapper tsconfig; the main
   build won't catch its errors.
 - Changing the payload layout, the crypto parameters, or the `.swcrypts.enc`
   naming affects already-deployed sites and cached service workers — treat as
   breaking and preserve forward/backward compatibility per the versioning
   contract.
-- `packages/site/dist/` and `packages/lib/README.md` are generated/gitignored —
-  don't commit them.
+- `packages/site/dist/`, `packages/lib/README.md`, and
+  `packages/lib/dist-wrapper/` are generated/gitignored — don't commit them.
