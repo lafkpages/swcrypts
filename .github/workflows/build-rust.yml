@@ -17,7 +17,10 @@ jobs:
         with:
           bun-version: 1.4.1
 
-      - name: Cache dependencies
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache JS dependencies
         uses: actions/cache@v4
         with:
           path: ~/.bun/install/cache
@@ -25,12 +28,17 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-bun-
 
-      - name: Install dependencies
+      - name: Cache Rust dependencies
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: packages/rust
+
+      - name: Install JS dependencies
         run: bun install --frozen-lockfile
 
       - name: Build SwCrypts lib
         run: bun run --cwd packages/lib build --skip-types
 
-      - name: Build CLI in release mode
+      - name: Build Rust packages in release mode
         run: cargo build --release
         working-directory: packages/rust
