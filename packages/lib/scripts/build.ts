@@ -1,10 +1,15 @@
 import { $, build } from "bun";
+import assert from "node:assert";
 import { rm } from "node:fs/promises";
 import { argv } from "node:process";
 
 import { process } from "htmlnano";
 
 import { exports } from "../package.json";
+
+// Check flags
+const shouldGenerateTypes = !argv.includes("--skip-types");
+const shouldWriteWrapper = !argv.includes("--skip-wrapper");
 
 // Start clean
 await rm("dist", { recursive: true, force: true });
@@ -17,9 +22,14 @@ const wrapperHtmlBuild = await build({
   compile: true,
   minify: true,
 });
+assert(
+  wrapperHtmlBuild.outputs.length === 1,
+  "Expected exactly one build output for the wrapper page",
+);
+const wrapperHtmlOutput = wrapperHtmlBuild.outputs[0]!;
 
 // Minify the wrapper page's HTML
-const wrapperHtmlMinified = await process(await wrapperHtmlBuild.outputs[0]!.text(), {
+const { html: wrapperHtmlMinified } = await process(await wrapperHtmlOutput.text(), {
   collapseWhitespace: "aggressive",
 
   // CSS and JS are already minified by Bun
@@ -30,12 +40,24 @@ const wrapperHtmlMinified = await process(await wrapperHtmlBuild.outputs[0]!.tex
   minifySvg: false,
 });
 
+// Write the wrapper HTML to disk
+if (shouldWriteWrapper) {
+  await Bun.write("./dist-wrapper/wrapper.html", wrapperHtmlMinified);
+}
+
 // Build the service worker
-const swBuild = await build({
+const swJsBuild = await build({
   entrypoints: ["./src/wrapper/sw/index.ts"],
   target: "browser",
   minify: true,
 });
+assert(swJsBuild.outputs.length === 1, "Expected exactly one build output for the service worker");
+const swJsOutput = swJsBuild.outputs[0]!;
+
+// Write the service worker to disk
+if (shouldWriteWrapper) {
+  await Bun.write("./dist-wrapper/sw.js", swJsOutput);
+}
 
 // Build the library and write it out
 await build({
@@ -47,8 +69,8 @@ await build({
   outdir: "dist",
   format: "esm",
   files: {
-    "./wrapper/index.html?raw": wrapperHtmlMinified.html,
-    "./wrapper/sw/index.ts?raw": swBuild.outputs[0]!,
+    "./wrapper/index.html?raw": wrapperHtmlMinified,
+    "./wrapper/sw/index.ts?raw": swJsOutput,
   },
   loader: {
     ".html?raw": "text",
@@ -56,10 +78,7 @@ await build({
   },
 });
 
-// Check if types should be generated or not
-const skipTypes = argv.includes("--skip-types");
-
-if (!skipTypes) {
+if (shouldGenerateTypes) {
   // Generate type declarations for each entry point
   await $`bun run -b tsc`;
 }
