@@ -8,6 +8,7 @@ dist-*
 *.tgz
 .astro
 /packages/lib/README.md
+/packages/rust/target
 
 # code coverage
 coverage
