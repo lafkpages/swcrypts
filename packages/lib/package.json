@@ -42,7 +42,7 @@
   },
   "devDependencies": {
     "@types/bun": "catalog:",
-    "htmlnano": "^3.4.0",
+    "htmlnano": "^3.4.1",
     "valibot": "^1.4.2"
   },
   "scripts": {
