@@ -1,7 +1,7 @@
 {
   "name": "@swcrypts/site",
   "devDependencies": {
-    "astro": "^7.3.1"
+    "astro": "^7.3.2"
   },
   "scripts": {
     "dev": "astro dev",
